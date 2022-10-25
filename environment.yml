@@ -1,0 +1,12 @@
+name: torch
+channels:
+  - conda-forge
+  - pytorch
+dependencies:
+  - python=3.9
+  - nvidia::cudatoolkit=11.6
+  - pytorch::pytorch
+  - pytorch::torchvision
+  - pytorch::torchaudio
+  - matplotlib
+  - numpy
