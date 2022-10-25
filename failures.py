@@ -82,19 +82,16 @@ class Net(nn.Module):
         return x#output
 
 
-def plot_weights_histograms (model, out_dir="."):
+def plot_weights_histograms (model, out_dir=".", name="init_weights"):
     # histogram of initial parameters
-    weights = list(model.parameters())
-    weights_1 = weights[0].data.detach().cpu().numpy(); print(f"weights_1: {weights_1.shape}"); print(f"mean_1 = {np.mean(weights_1):.5f}, std_1 = {np.std(weights_1):.5f}, ")
-    weights_2 = weights[1].data.detach().cpu().numpy(); print(f"weights_2: {weights_2.shape}"); print(f"mean_2 = {np.mean(weights_2):.5f}, std_2 = {np.std(weights_2):.5f}, ")
     plt.figure(figsize=(10, 5))
-    plt.hist(weights_1.ravel(), density=True, bins="sqrt", alpha=.3, label="w1")
-    plt.hist(weights_2.ravel(), density=True, bins="sqrt", alpha=.3, label="w2")
+    for par_name, par_vals in model.named_parameters():
+        weights_ = par_vals.data.detach().cpu().numpy()
+        plt.hist(weights_.ravel(), density=True, bins="sqrt", alpha=.3, label=par_name)
+        np.save(f"{out_dir}/{name}_{par_name}.npy", weights_)
     plt.axvline(0.,c="k")
     plt.legend()
-    plt.savefig(f"{out_dir}/{model.__name__}_init_weights.svg", bbox_inches="tight")
-    np.save(f"{out_dir}/{model.__name__}_init_weights_1.npy", weights_1)
-    np.save(f"{out_dir}/{model.__name__}_init_weights_2.npy", weights_2)
+    plt.savefig(f"{out_dir}/plot_histo_{name}.svg", bbox_inches="tight")
 
 
 if __name__ == "__main__":
@@ -156,6 +153,8 @@ if __name__ == "__main__":
     optimizer = optim.SGD(model.parameters(), lr=lr, weight_decay=wd)
     scheduler = CosineAnnealingLR(optimizer, n_epochs)
 
+    plot_weights_histograms(model, out_dir=out_dir, name="full")
+
     print(model)
 
     for epoch in range(1, n_epochs + 1):
@@ -183,6 +182,8 @@ if __name__ == "__main__":
     model = Net(N, functools.partial(LinearExampleDropout, drop_p=drop_p)).to(device)
     optimizer = optim.SGD(model.parameters(), lr=lr, weight_decay=wd)
     scheduler = CosineAnnealingLR(optimizer, n_epochs)
+
+    plot_weights_histograms(model, out_dir=out_dir, name="drop")
 
     print(model)
 
