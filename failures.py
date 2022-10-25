@@ -13,43 +13,20 @@ import functools
 import sys
 import os
 
-# conda update -n base -c defaults conda
 
-def _weight_drop(module, weights, dropout):
-    """
-    Helper for `WeightDrop`.
-    """
-
-    for name_w in weights:
-        w = getattr(module, name_w)
-        del module._parameters[name_w]
-        module.register_parameter(name_w + '_raw', nn.Parameter(w))
-
-    original_module_forward = module.forward
-
-    def forward(*args, **kwargs):
-        for name_w in weights:
-            raw_w = getattr(module, name_w + '_raw')
-            w = torch.nn.functional.dropout(raw_w, p=dropout, training=module.training)
-            setattr(module, name_w, w)
-
-        return original_module_forward(*args, **kwargs)
-
-    setattr(module, 'forward', forward)
-
-
-class WeightDropLinear(torch.nn.Linear):
-    """
-    Wrapper around :class:`torch.nn.Linear` that adds ``weight_dropout`` named argument.
-
-    Args:
-        weight_dropout (float): The probability a weight will be dropped.
-    """
-
+class WeightDropLinear(nn.Linear):
     def __init__(self, *args, weight_dropout=0.0, **kwargs):
         super().__init__(*args, **kwargs)
-        weights = ['weight']
-        _weight_drop(self, weights, weight_dropout)
+        self.weight_dropout = weight_dropout
+
+    def forward(self, x):
+        if not self.training:
+            return F.linear(x, self.weight, self.bias)
+        new_weight = (torch.rand((x.shape[0], *self.weight.shape), device=x.device) > self.weight_dropout) * self.weight[None, :, :]
+        output = torch.bmm(new_weight, x[:, :, None])[:, :, 0] / (1 - self.weight_dropout)
+        if self.bias is None:
+            return output
+        return output + self.bias
 
 
 class Net(nn.Module):
@@ -234,7 +211,7 @@ if __name__ == "__main__":
     ax.plot(test_acc)
     ax.set_xlabel("epoch")
     ax.set_ylabel('accuracy')
-    fig.savefig("accuracy.svg", bbox_inches="tight")
+    fig.savefig(f"{out_dir}/accuracy.svg", bbox_inches="tight")
     plt.close(fig)
 
     fig, ax = plt.subplots()
@@ -243,5 +220,5 @@ if __name__ == "__main__":
     ax.legend()
     ax.set_xlabel("epoch")
     ax.set_ylabel('L2 weight norm')
-    fig.savefig("weight_norm.svg", bbox_inches="tight")
+    fig.savefig(f"{out_dir}/weight_norm.svg", bbox_inches="tight")
     plt.close(fig)
