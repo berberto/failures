@@ -108,9 +108,9 @@ if __name__ == "__main__":
     drop_p = float(sys.argv[2])
 
     # set (and create) output directory
-    out_dir = "outputs_RP/"
-    out_dir += f"N:{N:04d}"
-    out_dir += f"_dropout:{drop_p:.2f}"
+    out_dir = "outputs_RP/noWD_"
+    out_dir += f"N_{N:04d}"
+    out_dir += f"__dropout_{drop_p:.2f}"
     os.makedirs(out_dir, exist_ok=True)
 
     # find device
@@ -141,8 +141,8 @@ if __name__ == "__main__":
 
     # ==================================================
     #   TRAINING WITHOUT DROPOUT
-    lr = 5e-2
-    wd = 1e-4
+    lr = 5e-3
+    wd = 0. #1e-4
     n_epochs = 100
 
     test_acc = []
@@ -173,7 +173,7 @@ if __name__ == "__main__":
     n_epochs = 100
     drop_p = 0.5
     lr = 5e-3
-    wd = 1e-4
+    wd = 0. #1e-4
 
     test_acc_p = []
     model_norm1_p = []
