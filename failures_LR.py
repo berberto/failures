@@ -83,6 +83,8 @@ class Net(nn.Module):
         super(Net, self).__init__()
         self.fc1 = layer_type(N, 1)
 
+        torch.manual_seed(1871)
+
         if scaling == "lin":
             # initialisation of the weights -- N(1/n, 1/n)
             for name, pars in self.named_parameters():
