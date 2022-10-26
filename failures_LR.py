@@ -32,8 +32,9 @@ def train(model, device, train_loader, optimizer, epoch, log_interval=100):
         # "sum" or "mean" refers to the sum/average over both batch AND dimension indices
         # e.g. for a batch size of 64 and 10 classes, it is a sum/average of 640 numbers
         loss = F.mse_loss(output, target, reduction="mean")
-        loss.backward()
-        optimizer.step()
+        if epoch > 0:
+            loss.backward()
+            optimizer.step()
         if batch_idx % log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
@@ -79,9 +80,9 @@ class LinearExampleDropout(nn.Linear):
         return output + self.bias
 
 class Net(nn.Module):
-    def __init__(self, N, layer_type=nn.Linear, scaling="sqrt"):
+    def __init__(self, N, layer_type=nn.Linear, scaling="sqrt", bias=False):
         super(Net, self).__init__()
-        self.fc1 = layer_type(N, 1)
+        self.fc1 = layer_type(N, 1, bias=bias)
 
         torch.manual_seed(1871)
 
@@ -105,10 +106,10 @@ class Net(nn.Module):
         return x
 
     def save(self, filename):
-        T.save(self.state_dict(), filename)
+        torch.save(self.state_dict(), filename)
 
     def load(self, filename):
-        self.load_state_dict(T.load(filename, map_location=self.device))
+        self.load_state_dict(torch.load(filename, map_location=self.device))
 
 
 def plot_weights_histograms (model, out_dir=".", name="init_weights"):
@@ -151,6 +152,10 @@ if __name__ == "__main__":
     # ==================================================
     #   SETUP TRAINING
     
+    n_epochs = 2000
+    lr = 1e-4
+    wd = 0.
+
     batch_size = 200
     train_kwargs = {'batch_size': batch_size}
     test_kwargs = {'batch_size': batch_size}
@@ -191,23 +196,21 @@ if __name__ == "__main__":
 
     # ==================================================
     #   TRAINING WITHOUT DROPOUT
-    lr = 1e-4
-    wd = 0.
-    n_epochs = 200
 
     train_loss = []
     test_acc = []
     model_norm = []
 
-    model = Net(N, layer_type=nn.Linear, scaling=scaling).to(device)
+    model = Net(N, layer_type=nn.Linear, scaling=scaling, bias=False).to(device)
     optimizer = optim.SGD(model.parameters(), lr=lr, weight_decay=wd)
     # scheduler = CosineAnnealingLR(optimizer, n_epochs)
 
+    model.save(f"{out_dir}/full_model_init")
     plot_weights_histograms(model, out_dir=out_dir, name="full")
 
     print(model)
 
-    for epoch in range(1, n_epochs + 1):
+    for epoch in range(n_epochs + 1):
         loss = train(model, device, train_loader, optimizer, epoch, log_interval=1000)
         acc, weight_norm = test(model, device, test_loader)
         train_loss.append(loss)
@@ -220,23 +223,21 @@ if __name__ == "__main__":
 
     # ==================================================
     #   TRAINING WITH DROPOUT
-    n_epochs = 200
-    lr = 1e-4
-    wd = 0.
 
     train_loss_p = []
     test_acc_p = []
     model_norm_p = []
 
-    model = Net(N, layer_type=functools.partial(LinearExampleDropout, drop_p=drop_p), scaling=scaling).to(device)
+    model = Net(N, layer_type=functools.partial(LinearExampleDropout, drop_p=drop_p), bias=False, scaling=scaling).to(device)
     optimizer = optim.SGD(model.parameters(), lr=lr, weight_decay=wd)
     # scheduler = CosineAnnealingLR(optimizer, n_epochs)
 
+    model.save(f"{out_dir}/drop_model_init")
     plot_weights_histograms(model, out_dir=out_dir, name="drop")
 
     print(model)
 
-    for epoch in range(1, n_epochs + 1):
+    for epoch in range(n_epochs + 1):
         loss = train(model, device, train_loader, optimizer, epoch, log_interval=1000)
         acc, weight_norm = test(model, device, test_loader)
         train_loss_p.append(loss)
