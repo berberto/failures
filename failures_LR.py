@@ -12,17 +12,7 @@ import numpy as np
 
 from networks import LinearWeightDropout, Net
 from training_utils import train, test
-
-class LinearRegressionDataset(torch.utils.data.Dataset):
-    def __init__ (self, X, y):
-        self.X = torch.from_numpy(X)
-        self.y = torch.from_numpy(y)
-
-    def __len__ (self):
-        return len(self.X)
-
-    def __getitem__ (self, i):
-        return self.X[i], self.y[i]
+from data import LinearRegressionDataset
 
 
 def plot_weights_histograms (model, out_dir=".", name="init_weights"):
@@ -61,7 +51,7 @@ if __name__ == "__main__":
     # ==================================================
     #   SETUP TRAINING
     
-    n_epochs = 2000
+    n_epochs = 20000
     lr = 1e-4
     wd = 0.
 
@@ -81,25 +71,8 @@ if __name__ == "__main__":
 
     n_train = 10
     n_test = 1000
-
-    w_star = np.ones(N)/N
-
-    _th = 2*np.pi * np.random.rand(n_train); _v = np.random.randn(n_train, N)
-    X_train = (np.cos(_th)**2)[:, None] * w_star[None,:] + (np.sin(_th)**2)[:,None] * _v
-    y_train = np.sum(X_train * w_star[None,:], axis=1)
-
-    _th = 2*np.pi * np.random.rand(n_test); _v = np.random.randn(n_test, N)
-    X_test = (np.cos(_th)**2)[:, None] * w_star[None,:] + (np.sin(_th)**2)[:,None] * _v
-    y_test = np.sum(X_test * w_star[None,:], axis=1)
-
-    print(f"w_star.shape = {w_star.shape}\t max(|w_star.shape|) = {np.max(np.abs(w_star))}")
-    print(f"X_train.shape = {X_train.shape}\t max(|X_train.shape|) = {np.max(np.abs(X_train))}")
-    print(f"y_train.shape = {y_train.shape}\t max(|y_train.shape|) = {np.max(np.abs(y_train))}")
-    print(f"X_test.shape = {X_test.shape}\t max(|X_test.shape|) = {np.max(np.abs(X_test))}")
-    print(f"y_test.shape = {y_test.shape}\t max(|y_test.shape|) = {np.max(np.abs(y_test))}")
-
-    dataset1 = LinearRegressionDataset(X_train, y_train)
-    dataset2 = LinearRegressionDataset(X_test, y_test)
+    dataset1 = LinearRegressionDataset(N, n_train)
+    dataset2 = LinearRegressionDataset(N, n_test)
     train_loader = torch.utils.data.DataLoader(dataset1,**train_kwargs)
     test_loader = torch.utils.data.DataLoader(dataset2, **test_kwargs)
 
