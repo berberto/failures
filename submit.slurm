@@ -5,7 +5,7 @@
 #SBATCH --array=1-28
 #SBATCH --job-name=dropLR
 #SBATCH --mem=4G
-#SBATCH --time=12:00:00
+#SBATCH --time=1-00:00:00
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --mail-user=a.pezzotta@ucl.ac.uk
 

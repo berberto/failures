@@ -10,11 +10,17 @@ class LinearRegressionDataset(torch.utils.data.Dataset):
     def __init__ (self, N, n_samples):
         w_star = np.ones(N)/np.sqrt(N)
 
-        _th = 2*np.pi * np.random.rand(n_samples); _v = np.random.randn(n_samples, N)
-        X = (np.cos(_th)**2)[:, None] * w_star[None,:] + (np.sin(_th)**2)[:,None] * _v
+        # _th = 2*np.pi * np.random.rand(n_samples); _v = 0.2*np.random.randn(n_samples, N)
+        # X = (np.cos(_th)**2)[:, None] * w_star[None,:] + (np.sin(_th)**2)[:,None] * _v
+        X = np.random.randn(n_samples, N)
         y = np.sum(X * w_star[None,:], axis=1)
         self.X = torch.from_numpy(X)
         self.y = torch.from_numpy(y)
+
+        # from sklearn.decomposition import PCA
+        # import matplotlib.pyplot as plt
+        # plt.plot(PCA().fit(X).singular_values_)
+        # plt.show()
 
         print(f"w.shape = {w_star.shape}\t max(|w|) = {np.max(np.abs(w_star))}")
         print(f"X.shape = {X.shape}\t max(|X|) = {np.max(np.abs(X))}")
@@ -25,3 +31,7 @@ class LinearRegressionDataset(torch.utils.data.Dataset):
 
     def __getitem__ (self, i):
         return self.X[i], self.y[i]
+
+
+if __name__ == "__main__":
+    data = LinearRegressionDataset(100, 10000)

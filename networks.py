@@ -32,7 +32,8 @@ class LinearWeightDropout(nn.Linear):
 class Net(nn.Module):
     def __init__(self, N, layer_type=nn.Linear, scaling="sqrt", bias=False):
         super(Net, self).__init__()
-        self.fc1 = layer_type(N, 1, bias=bias)
+        self.fc1 = layer_type(N, N, bias=bias)
+        self.fc2 = nn.Linear(N, 1, bias=bias)
 
         torch.manual_seed(1871)
 
@@ -52,8 +53,8 @@ class Net(nn.Module):
             raise ValueError(f"Invalid scaling option '{scaling}'\nChoose either 'sqrt' or 'lin'")
 
     def forward(self, x):
-        x = self.fc1(x)
-        return x
+        out = self.fc2(self.fc1(x))
+        return out
 
     def save(self, filename):
         torch.save(self.state_dict(), filename)

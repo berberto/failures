@@ -38,7 +38,7 @@ if __name__ == "__main__":
     drop_p = float(sys.argv[3])
 
     # set (and create) output directory
-    out_dir = "outputs_LR/noWD_"
+    out_dir = "outputs_LR_2L/"
     out_dir += f"init_{scaling}"
     out_dir += f"__N_{N:04d}"
     out_dir += f"__dropout_{drop_p:.2f}"
@@ -51,7 +51,7 @@ if __name__ == "__main__":
     # ==================================================
     #   SETUP TRAINING
     
-    n_epochs = 20000
+    n_epochs = 100000
     lr = 1e-4
     wd = 0.
 
@@ -94,7 +94,7 @@ if __name__ == "__main__":
 
     for epoch in range(n_epochs + 1):
         loss = train(model, device, train_loader, optimizer, epoch, log_interval=1000)
-        acc, weight_norm = test(model, device, test_loader)
+        acc, weight_norm, _ = test(model, device, test_loader)
         train_loss.append(loss)
         test_acc.append(acc)
         model_norm.append(weight_norm)
@@ -121,7 +121,7 @@ if __name__ == "__main__":
 
     for epoch in range(n_epochs + 1):
         loss = train(model, device, train_loader, optimizer, epoch, log_interval=1000)
-        acc, weight_norm = test(model, device, test_loader)
+        acc, weight_norm, _ = test(model, device, test_loader)
         train_loss_p.append(loss)
         test_acc_p.append(acc)
         model_norm_p.append(weight_norm)
