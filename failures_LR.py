@@ -146,7 +146,41 @@ if __name__ == "__main__":
     np.save(f"{out_dir}/drop_hidden_var.npy", np.array(hidden_var_p))
     with open(f"{out_dir}/drop_weights.pkl", "wb") as f:
         pickle.dump(model_weights_p, f)
-        
+
+    # '''
+
+    # ==================================================
+    #      ANALYSIS
+    '''
+
+    with open(f"{out_dir}/full_weights.pkl", "rb") as f:
+        model_weights_ = pickle.load(f)
+        weights_list = []
+        svd_list = []
+        for i in range(len(model_weights_[0])):
+            weights_list.append( np.array([np.squeeze(w[i]) for w in model_weights_]) )
+
+    # print(type(weights_list), len(weights_list))
+    # print(type(weights_list[0]), weights_list[0].shape)
+    # print(type(weights_list[1]), weights_list[1].shape)
+
+    W1 = weights_list[0]
+    W2 = weights_list[1]
+
+    U, S, V = np.linalg.svd(W1)
+
+    # print(type(U), U.shape)
+    # print(type(S), S.shape)
+    # print(type(V), V.shape)
+
+    IPR = np.array([np.sum(s**2)/np.sum(s)**2 for s in S])
+
+    print(IPR)
+
+
+    # with open(f"{out_dir}/drop_weights.pkl", "rb") as f:
+    #     model_weights_p = pickle.load(f)
+
     '''
 
     # ==================================================
