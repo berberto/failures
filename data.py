@@ -16,6 +16,7 @@ class LinearRegressionDataset(torch.utils.data.Dataset):
         y = np.sum(X * w_star[None,:], axis=1)
         self.X = torch.from_numpy(X)
         self.y = torch.from_numpy(y)
+        self.w = w_star
 
         # from sklearn.decomposition import PCA
         # import matplotlib.pyplot as plt
