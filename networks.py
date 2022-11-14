@@ -52,9 +52,14 @@ class Net(nn.Module):
         else:
             raise ValueError(f"Invalid scaling option '{scaling}'\nChoose either 'sqrt' or 'lin'")
 
-    def forward(self, x):
-        out = self.fc2(self.fc1(x))
-        return out
+    def forward(self, x, hidden_layer=False):
+        h = self.fc1(x)
+        # h = F.relu(h)
+        out = self.fc2(h)
+        if hidden_layer:
+            return out, h
+        else:
+            return out
 
     def save(self, filename):
         torch.save(self.state_dict(), filename)
