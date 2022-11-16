@@ -50,7 +50,7 @@ if __name__ == "__main__":
         drop_l = None
 
     # set (and create) output directory
-    out_dir = "outputs_2L/"
+    out_dir = "outputs_2L_GD/"
     out_dir += f"{scaling}/"
     out_dir += f"N_{N:04d}/"
     out_dir += f"{drop_l}/"
@@ -66,14 +66,14 @@ if __name__ == "__main__":
 
     n_epochs = 1000
 
-    n_train = 100000
+    n_train = 1000000
     n_test = 1000
     n_skip = min(100, n_epochs) # epochs to skip when saving data
 
     lr = 1e-4
     wd = 0.
 
-    batch_size = n_train//10
+    batch_size = n_train//100
     train_kwargs = {'batch_size': batch_size}
     test_kwargs = {'batch_size': batch_size}
     use_cuda = True

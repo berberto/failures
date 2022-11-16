@@ -13,6 +13,7 @@ import os
 
 def train(model, device, train_loader, optimizer, epoch, log_interval=100, verbose=False):
     model.train()
+    loss = 0.
     for batch_idx, (data, target) in enumerate(train_loader):
         data = data.clone().detach().float().to(device)
         target = target.clone().detach().float().view(-1,1).to(device)
@@ -20,15 +21,15 @@ def train(model, device, train_loader, optimizer, epoch, log_interval=100, verbo
         output = model(data)
         # "sum" or "mean" refers to the sum/average over both batch AND dimension indices
         # e.g. for a batch size of 64 and 10 classes, it is a sum/average of 640 numbers
-        loss = F.mse_loss(output, target, reduction="mean")
-        if epoch > 0:
-            loss.backward()
-            optimizer.step()
-        if verbose:
-            if batch_idx % log_interval == 0:
-                print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                    epoch, batch_idx * len(data), len(train_loader.dataset),
-                    100. * batch_idx / len(train_loader), loss.item()))
+        loss += F.mse_loss(output, target, reduction="mean")/len(train_loader)
+    if epoch > 0:
+        loss.backward()
+        optimizer.step()
+        # if verbose:
+        #     if batch_idx % log_interval == 0:
+        #         print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+        #             epoch, batch_idx * len(data), len(train_loader.dataset),
+        #             100. * batch_idx / len(train_loader), loss.item()))
     return loss.item()
 
 def test(model, device, test_loader):
