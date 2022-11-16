@@ -1,7 +1,7 @@
 import numpy as np
 import sys
 
-s_vals = ["lin ", "sqrt"]
+s_vals = ["sqrt"]
 
 N_vals = [1000]
 
