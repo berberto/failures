@@ -3,7 +3,7 @@ import sys
 
 s_vals = ["sqrt"]
 
-N_vals = [1000]
+N_vals = [100]
 
 p_vals = [0.1, 0.25, 0.50, 0.75]
 
