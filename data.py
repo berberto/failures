@@ -18,15 +18,6 @@ class LinearRegressionDataset(torch.utils.data.Dataset):
         self.y = torch.from_numpy(y)
         self.w = w_star
 
-        # from sklearn.decomposition import PCA
-        # import matplotlib.pyplot as plt
-        # plt.plot(PCA().fit(X).singular_values_)
-        # plt.show()
-
-        print(f"w.shape = {w_star.shape}\t max(|w|) = {np.max(np.abs(w_star))}")
-        print(f"X.shape = {X.shape}\t max(|X|) = {np.max(np.abs(X))}")
-        print(f"y.shape = {y.shape}\t max(|y|) = {np.max(np.abs(y))}")
-
     def __len__ (self):
         return len(self.X)
 

@@ -210,7 +210,7 @@ if __name__ == "__main__":
     ax.set_xlabel('epoch')
     ax.set_ylim([0,1])
     for i, (norm, c) in enumerate(zip(weights_norm, colors)):
-        ax.plot(norm/norm[0], c=c, label=f'{i+1}')
+        ax.plot(norm/norm[0], c=c, label=f'layer {i+1}')
     ax.legend(loc='best')
     fig.savefig(f'{out_dir}/plot_weights_norm.png', bbox_inches="tight")
 
@@ -220,8 +220,6 @@ if __name__ == "__main__":
     ax.set_xlabel('epoch')
     ax.set_ylim([0,1])
     ln = ax.plot(hidden_var/hidden_var[0])
-    lns = ln+ln1
-    labs = [l.get_label() for l in lns]
-    ax.legend(lns, labs, loc='best')
+    ax.legend(loc='best')
     fig.savefig(f'{out_dir}/plot_hidden_layer_variance.png', bbox_inches="tight")
 
