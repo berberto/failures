@@ -61,16 +61,16 @@ if __name__ == "__main__":
     # ==================================================
     #   SETUP TRAINING
 
-    n_epochs = 10
+    n_epochs = 1000
 
-    n_train = 100
+    n_train = 100000
     n_test = 1000
     n_skip = min(100, n_epochs) # epochs to skip when saving data
 
     lr = 1e-4
     wd = 0.
 
-    batch_size = n_train
+    batch_size = n_train//10
     train_kwargs = {'batch_size': batch_size}
     test_kwargs = {'batch_size': batch_size}
     use_cuda = True
