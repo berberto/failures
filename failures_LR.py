@@ -164,7 +164,7 @@ if __name__ == "__main__":
     train_loss = np.load(f"{out_dir}/train_loss.npy")
     test_acc = np.load(f"{out_dir}/test_loss.npy")
     hidden_var = np.load(f"{out_dir}/hidden_var.npy")
-    with open(f"{out_dir}/weights_norm.npy", "rb") as f:
+    with open(f"{out_dir}/weights_norm.pkl", "rb") as f:
         weights_norm = pickle.load(f)
 
     saved_epochs = np.arange(0,n_epochs+1,n_skip)
@@ -178,27 +178,22 @@ if __name__ == "__main__":
     colors = ['C0', 'C1', 'C2', 'C3']
 
     fig, ax = plt.subplots(figsize=(6, 4))
-    fig, ax = plt.subplots()
-    ax.plot(saved_epochs, PR, ls="--")
-    ax.legend()
     ax.set_title(title)
+    ax.plot(saved_epochs, PR)
     ax.set_ylabel('participation ratio')
     ax.set_xlabel('epoch')
     fig.savefig(f'{out_dir}/plot_PR.png', bbox_inches="tight")
 
     fig, ax = plt.subplots(figsize=(6, 4))
-    fig, ax = plt.subplots()
-    ax.plot(saved_epochs, eval1, ls="--")
-    ax.legend()
     ax.set_title(title)
-    ax.set_ylabel('Largest W1 eigenvalue')
+    ax.plot(saved_epochs, eval1/N)
+    ax.set_ylabel(r'$\lambda$ / N')
     ax.set_xlabel('epoch')
     fig.savefig(f'{out_dir}/plot_eval1.png', bbox_inches="tight")
 
     fig, ax = plt.subplots(figsize=(6, 4))
-    fig, ax = plt.subplots()
-    ax.plot(train_loss, ls="--")
-    ax.legend()
+    ax.plot(train_loss)
+    ax.plot(test_acc)
     ax.set_title(title)
     ax.set_ylabel('Training loss')
     ax.set_xlabel('epoch')
@@ -220,6 +215,5 @@ if __name__ == "__main__":
     ax.set_xlabel('epoch')
     ax.set_ylim([0,1])
     ln = ax.plot(hidden_var/hidden_var[0])
-    ax.legend(loc='best')
     fig.savefig(f'{out_dir}/plot_hidden_layer_variance.png', bbox_inches="tight")
 
