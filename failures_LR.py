@@ -64,18 +64,17 @@ if __name__ == "__main__":
     # ==================================================
     #   SETUP TRAINING
 
-    n_epochs = 1000
+    n_epochs = 10000
 
-    n_train = 1000000
+    n_train = 100000
     n_test = 1000
     n_skip = min(100, n_epochs) # epochs to skip when saving data
 
-    lr = 1e-4
+    lr = 1e-5
     wd = 0.
 
-    batch_size = n_train//100
-    train_kwargs = {'batch_size': batch_size}
-    test_kwargs = {'batch_size': batch_size}
+    train_kwargs = {'batch_size': n_train//100}
+    test_kwargs = {'batch_size': n_test}
     use_cuda = True
     cuda_kwargs = {'num_workers': 1,
                     'pin_memory': True,
@@ -92,7 +91,7 @@ if __name__ == "__main__":
         train_loss = []
         test_acc = []
         weights_norm = []
-        hidden_var = []
+        hidden = []
         model_weights = []
 
         # model = Net(N, layer_type=nn.Linear, scaling=scaling, bias=False).to(device)
@@ -110,19 +109,21 @@ if __name__ == "__main__":
             loss = train(model, device, train_loader, optimizer, epoch, log_interval=1000)
             # test
             test_loader = generate_data(N, n_test, **test_kwargs)
-            acc, model_weights_, hidden_var_ = test(model, device, test_loader)
-            # collect statistics
-            if epoch % n_skip == 0:
-                model_weights.append(model_weights_)
+            acc, model_weights_, hidden_ = test(model, device, test_loader)
+
             train_loss.append(loss)
             test_acc.append(acc)
-            hidden_var.append(hidden_var_)
-        model.save(f"{out_dir}/model_trained")
-        np.save(f"{out_dir}/train_loss.npy", np.array(train_loss))
-        np.save(f"{out_dir}/test_loss.npy", np.array(test_acc))
-        np.save(f"{out_dir}/hidden_var.npy", np.array(hidden_var))
-        with open(f"{out_dir}/weights.pkl", "wb") as f:
-            pickle.dump(model_weights, f)
+            # collect statistics
+            if epoch % n_skip == 0:
+                hidden.append(hidden_)
+                model_weights.append(model_weights_)
+                # save data
+                model.save(f"{out_dir}/model_trained")
+                np.save(f"{out_dir}/train_loss.npy", np.array(train_loss))
+                np.save(f"{out_dir}/test_loss.npy", np.array(test_acc))
+                np.save(f"{out_dir}/hidden.npy", np.array(hidden))
+                with open(f"{out_dir}/weights.pkl", "wb") as f:
+                    pickle.dump(model_weights, f)
 
     # ==================================================
     #      ANALYSIS
@@ -170,7 +171,7 @@ if __name__ == "__main__":
     # re-load saved data
     train_loss = np.load(f"{out_dir}/train_loss.npy")
     test_acc = np.load(f"{out_dir}/test_loss.npy")
-    hidden_var = np.load(f"{out_dir}/hidden_var.npy")
+    hidden = np.load(f"{out_dir}/hidden.npy")
     with open(f"{out_dir}/weights_norm.pkl", "rb") as f:
         weights_norm = pickle.load(f)
 
@@ -212,7 +213,7 @@ if __name__ == "__main__":
     ax.set_xlabel('epoch')
     ax.set_ylim([0,1])
     for i, (norm, c) in enumerate(zip(weights_norm, colors)):
-        ax.plot(norm/norm[0], c=c, label=f'layer {i+1}')
+        ax.plot(norm/norm[0], c=c, label=f'{i+1}: {norm[0]}')
     ax.legend(loc='best')
     fig.savefig(f'{out_dir}/plot_weights_norm.png', bbox_inches="tight")
 
@@ -221,6 +222,6 @@ if __name__ == "__main__":
     ax.set_ylabel('Hidden layer variance')
     ax.set_xlabel('epoch')
     ax.set_ylim([0,1])
-    ln = ax.plot(hidden_var/hidden_var[0])
+    ln = ax.plot(np.linalg.norm(hidden, axis=1))
     fig.savefig(f'{out_dir}/plot_hidden_layer_variance.png', bbox_inches="tight")
 
