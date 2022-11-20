@@ -41,6 +41,8 @@ if __name__ == "__main__":
     # ==================================================
     #   SETUP PARAMETERS
 
+    np.random.seed(1871)
+
     # get parameters as inputs
     scaling = sys.argv[1]       # init pars scaling ("lin"=1/N or "sqrt"=1/sqrt(N))
     N = int(sys.argv[2])        # number of input and hidden units
@@ -50,7 +52,7 @@ if __name__ == "__main__":
         drop_l = None
 
     # set (and create) output directory
-    out_dir = "outputs_2L_GD/"
+    out_dir = "outputs_2L/"
     out_dir += f"{scaling}/"
     out_dir += f"N_{N:04d}/"
     out_dir += f"{drop_l}/"
@@ -64,16 +66,16 @@ if __name__ == "__main__":
     # ==================================================
     #   SETUP TRAINING
 
-    n_epochs = 10000
+    n_epochs = 100000
 
     n_train = 100000
     n_test = 1000
-    n_skip = min(100, n_epochs) # epochs to skip when saving data
+    n_skip = min(1000, n_epochs//10) # epochs to skip when saving data
 
-    lr = 1e-5
+    lr = 1e-3
     wd = 0.
 
-    train_kwargs = {'batch_size': n_train//100}
+    train_kwargs = {'batch_size': 1000}
     test_kwargs = {'batch_size': n_test}
     use_cuda = True
     cuda_kwargs = {'num_workers': 1,
@@ -88,11 +90,14 @@ if __name__ == "__main__":
 
     if training:
 
+        print("\nTRAINING ...")
+
         train_loss = []
         test_acc = []
         weights_norm = []
         hidden = []
         model_weights = []
+        saved_epochs = []
 
         # model = Net(N, layer_type=nn.Linear, scaling=scaling, bias=False).to(device)
         model = Net(N, layer_type=functools.partial(LinearWeightDropout, drop_p=drop_p), bias=False, 
@@ -102,23 +107,25 @@ if __name__ == "__main__":
         model.save(f"{out_dir}/model_init")
 
         print(model)
+        test_loader = generate_data(N, n_test, **test_kwargs)
+        train_loader = generate_data(N, n_train, **train_kwargs)
 
         for epoch in range(n_epochs + 1):
-            # train
-            train_loader = generate_data(N, n_train, **train_kwargs)
-            loss = train(model, device, train_loader, optimizer, epoch, log_interval=1000)
             # test
-            test_loader = generate_data(N, n_test, **test_kwargs)
             acc, model_weights_, hidden_ = test(model, device, test_loader)
+            # train
+            loss = train(model, device, train_loader, optimizer, epoch, log_interval=1000)
 
             train_loss.append(loss)
             test_acc.append(acc)
             # collect statistics
             if epoch % n_skip == 0:
+                saved_epochs.append(epoch)
                 hidden.append(hidden_)
                 model_weights.append(model_weights_)
                 # save data
                 model.save(f"{out_dir}/model_trained")
+                np.save(f"{out_dir}/saved_epochs.npy", np.array(saved_epochs))
                 np.save(f"{out_dir}/train_loss.npy", np.array(train_loss))
                 np.save(f"{out_dir}/test_loss.npy", np.array(test_acc))
                 np.save(f"{out_dir}/hidden.npy", np.array(hidden))
@@ -129,6 +136,8 @@ if __name__ == "__main__":
     #      ANALYSIS
 
     if analysis:
+
+        print("\nSTATISTICS ...")
         
         # get weights and calculate norm
         with open(f"{out_dir}/weights.pkl", "rb") as f:
@@ -151,9 +160,9 @@ if __name__ == "__main__":
 
         # select dominant modes
         mode = np.argmax(S, axis=1)
-        eval1 = S[:, mode]
-        Rvec1 = U[:, mode]
-        Lvec1 = V[:, mode]
+        eval1 = S[np.arange(len(mode)), mode] #  np.take(S, mode, axis=1)
+        Rvec1 = U[np.arange(len(mode)), mode] #  np.take(U, mode, axis=1)
+        Lvec1 = V[np.arange(len(mode)), mode] #  np.take(V, mode, axis=1)
 
         # calculate the participation ratio
         PR = np.array([np.sum(s)**2/np.sum(s**2) for s in S])
@@ -168,14 +177,16 @@ if __name__ == "__main__":
     # ==================================================
     #      PLOTS
     
+    print("\nPLOTTING ...")
+
     # re-load saved data
+    saved_epochs = np.load(f"{out_dir}/saved_epochs.npy")
     train_loss = np.load(f"{out_dir}/train_loss.npy")
     test_acc = np.load(f"{out_dir}/test_loss.npy")
     hidden = np.load(f"{out_dir}/hidden.npy")
     with open(f"{out_dir}/weights_norm.pkl", "rb") as f:
         weights_norm = pickle.load(f)
 
-    saved_epochs = np.arange(0,n_epochs+1,n_skip)
     PR = np.load(f"{out_dir}/PR.npy")
     S = np.load(f"{out_dir}/eigenvalues.npy")
     eval1 = np.load(f"{out_dir}/eval.npy")
@@ -185,43 +196,67 @@ if __name__ == "__main__":
     title = f"init {'1/N' if scaling == 'lin' else '1/sqrt(N)'}; N ={N:04d}; drop {drop_l} wp {drop_p:.2f}"
     colors = ['C0', 'C1', 'C2', 'C3']
 
+    # PARTICIPATION RATIO AND LARGEST SINGULAR VALUE
     fig, ax = plt.subplots(figsize=(6, 4))
     ax.set_title(title)
-    ax.plot(saved_epochs, PR)
-    ax.set_ylabel('participation ratio')
     ax.set_xlabel('epoch')
-    fig.savefig(f'{out_dir}/plot_PR.png', bbox_inches="tight")
+    ax.set_ylabel(r'$\lambda_1$')
+    ln = ax.plot(saved_epochs, eval1, c='C0', label=r"$\lambda_1$")
+    ax1 = ax.twinx()
+    ln1 = ax1.plot(saved_epochs, PR, c='C1', label="PR")
+    ax1.set_ylabel('participation ratio')
+    lns = ln+ln1
+    labs = [l.get_label() for l in lns]
+    ax.legend(lns, labs, loc=9)
+    fig.savefig(f'{out_dir}/plot_eval_PR.png', bbox_inches="tight")
 
+    # SINGULAR VALUES DISTRIBUTION
     fig, ax = plt.subplots(figsize=(6, 4))
     ax.set_title(title)
-    ax.plot(saved_epochs, eval1/N)
-    ax.set_ylabel(r'$\lambda$ / N')
-    ax.set_xlabel('epoch')
-    fig.savefig(f'{out_dir}/plot_eval1.png', bbox_inches="tight")
+    ax.set_xlabel('eigenvalue')
+    ax.set_ylabel('density')
+    ax.hist(S[0], density=True, bins="sqrt", label="initial", alpha=0.3)
+    ax.hist(S[-1], density=True, bins="sqrt", label="trained", alpha=0.3)
+    ax.legend(loc="best")
+    fig.savefig(f'{out_dir}/plot_eval_distr.png', bbox_inches="tight")
 
+    # TRAIN AND TEST LOSS
     fig, ax = plt.subplots(figsize=(6, 4))
-    ax.plot(train_loss)
-    ax.plot(test_acc)
+    ax.plot(train_loss, label="train")
+    ax.plot(test_acc, label="test")
     ax.set_title(title)
-    ax.set_ylabel('Training loss')
+    ax.set_yscale("log")
+    ax.set_ylabel('Train and test loss')
     ax.set_xlabel('epoch')
-    fig.savefig(f'{out_dir}/plot_train_loss.png', bbox_inches="tight")
+    ax.legend(loc="best")
+    fig.savefig(f'{out_dir}/plot_loss.png', bbox_inches="tight")
 
+    # NORM OF THE WEIGHTS
     fig, ax = plt.subplots(figsize=(6, 4))
     ax.set_title(title)
     ax.set_ylabel('L2 weight norm')
     ax.set_xlabel('epoch')
     ax.set_ylim([0,1])
     for i, (norm, c) in enumerate(zip(weights_norm, colors)):
-        ax.plot(norm/norm[0], c=c, label=f'{i+1}: {norm[0]}')
-    ax.legend(loc='best')
+        ax.plot(norm/norm[0], c=c, label=f'{i+1}: {norm[0]:.2e}')
+    ax.legend(loc='best', title="layer: scale")
     fig.savefig(f'{out_dir}/plot_weights_norm.png', bbox_inches="tight")
 
+    # VARIANCE OF THE HIDDEN LAYER
     fig, ax = plt.subplots(figsize=(6, 4))
     ax.set_title(title)
     ax.set_ylabel('Hidden layer variance')
     ax.set_xlabel('epoch')
-    ax.set_ylim([0,1])
-    ln = ax.plot(np.linalg.norm(hidden, axis=1))
+    ax.plot(saved_epochs, np.linalg.norm(hidden, axis=1))
     fig.savefig(f'{out_dir}/plot_hidden_layer_variance.png', bbox_inches="tight")
+
+    # HISTOGRAM OF THE HIDDEN LAYER
+    fig, ax = plt.subplots(figsize=(6, 4))
+    ax.set_title(title)
+    ax.set_xlabel('Hidden layer activity')
+    ax.set_ylabel('density')
+    ax.hist(hidden[0], density=True, bins="sqrt", label="initial", alpha=0.3)
+    ax.hist(hidden[-1], density=True, bins="sqrt", label="trained", alpha=0.3)
+    ax.legend(loc="best")
+    fig.savefig(f'{out_dir}/plot_hidden_layer_histogram.png', bbox_inches="tight")
 

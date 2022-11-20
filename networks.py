@@ -57,7 +57,7 @@ class Net(nn.Module):
             for name, pars in self.named_parameters():
                 if "weight" in name:
                     f_in = 1.*pars.data.size()[1]
-                    pars.data.normal_(0., 2./np.sqrt(f_in))
+                    pars.data.normal_(0., 1./np.sqrt(f_in))
         else:
             raise ValueError(f"Invalid scaling option '{scaling}'\nChoose either 'sqrt' or 'lin'")
 

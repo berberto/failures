@@ -3,9 +3,9 @@
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --array=1-13
-#SBATCH --job-name=GD
-#SBATCH --mem=64G
-#SBATCH --time=1-00:00:00
+#SBATCH --job-name=2L100
+#SBATCH --mem=16G
+#SBATCH --time=5-00:00:00
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --mail-user=a.pezzotta@ucl.ac.uk
 
