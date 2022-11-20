@@ -20,8 +20,6 @@ class LinearWeightDropout(nn.Linear):
         self.drop_p = drop_p
 
     def forward(self, input):
-        if not self.training:
-            return F.linear(input, self.weight, self.bias)
         new_weight = (torch.rand((input.shape[0], *self.weight.shape), device=input.device) > self.drop_p) * self.weight[None, :, :]
         output = torch.bmm(new_weight, input[:, :, None])[:, :, 0] / (1 - self.drop_p)
         if self.bias is None:

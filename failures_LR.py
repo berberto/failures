@@ -59,6 +59,8 @@ if __name__ == "__main__":
     out_dir += f"q_{drop_p:.2f}"    
     os.makedirs(out_dir, exist_ok=True)
 
+    print(f"Output directory:\n\t{out_dir}\n")
+
     # find device
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     print(f"device = {device}")
@@ -70,9 +72,9 @@ if __name__ == "__main__":
 
     n_train = 100000
     n_test = 1000
-    n_skip = min(1000, n_epochs//10) # epochs to skip when saving data
+    n_skip = min(100, n_epochs//10) # epochs to skip when saving data
 
-    lr = 1e-3
+    lr = 1e-5
     wd = 0.
 
     train_kwargs = {'batch_size': 1000}
@@ -111,10 +113,10 @@ if __name__ == "__main__":
         train_loader = generate_data(N, n_train, **train_kwargs)
 
         for epoch in range(n_epochs + 1):
+            # train (except on the first epoch)
+            loss = train(model, device, train_loader, optimizer, epoch, log_interval=1000)
             # test
             acc, model_weights_, hidden_ = test(model, device, test_loader)
-            # train
-            loss = train(model, device, train_loader, optimizer, epoch, log_interval=1000)
 
             train_loss.append(loss)
             test_acc.append(acc)
@@ -137,7 +139,7 @@ if __name__ == "__main__":
 
     if analysis:
 
-        print("\nSTATISTICS ...")
+        print("STATISTICS ...")
         
         # get weights and calculate norm
         with open(f"{out_dir}/weights.pkl", "rb") as f:
@@ -177,7 +179,7 @@ if __name__ == "__main__":
     # ==================================================
     #      PLOTS
     
-    print("\nPLOTTING ...")
+    print("PLOTTING ...")
 
     # re-load saved data
     saved_epochs = np.load(f"{out_dir}/saved_epochs.npy")
@@ -222,8 +224,8 @@ if __name__ == "__main__":
 
     # TRAIN AND TEST LOSS
     fig, ax = plt.subplots(figsize=(6, 4))
-    ax.plot(train_loss, label="train")
-    ax.plot(test_acc, label="test")
+    ax.scatter(np.arange(len(test_acc)), test_acc, label="test", s=2, c="C1")
+    ax.plot(train_loss, label="train", c="C0")
     ax.set_title(title)
     ax.set_yscale("log")
     ax.set_ylabel('Train and test loss')
@@ -238,7 +240,7 @@ if __name__ == "__main__":
     ax.set_xlabel('epoch')
     ax.set_ylim([0,1])
     for i, (norm, c) in enumerate(zip(weights_norm, colors)):
-        ax.plot(norm/norm[0], c=c, label=f'{i+1}: {norm[0]:.2e}')
+        ax.plot(saved_epochs, norm/norm[0], c=c, label=f'{i+1}: {norm[0]:.2e}')
     ax.legend(loc='best', title="layer: scale")
     fig.savefig(f'{out_dir}/plot_weights_norm.png', bbox_inches="tight")
 

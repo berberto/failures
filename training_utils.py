@@ -42,8 +42,10 @@ def test(model, device, test_loader):
             X = X.clone().detach().float().to(device)
             y = y.clone().detach().float().view(-1,1).to(device)
             output, hidden_ = model.forward(X, hidden_layer=True)
-            hidden_ = np.mean(hidden_.detach().cpu().numpy(), axis=0)
-            hidden += hidden_/len(test_loader)
+            # mean hidden-layer activity
+            hidden_ = np.mean(hidden_.detach().cpu().numpy(), axis=0) # mean over batch data points
+            hidden += hidden_ / len(test_loader)                      # mean over batches
+            # mean loss (MSE averaged over data points only)
             test_loss += F.mse_loss(output, y, reduction="sum").item() / len(test_loader.dataset)
 
     print('Test set: Average loss: {:.4f}'.format(test_loss))
