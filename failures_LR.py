@@ -52,7 +52,7 @@ if __name__ == "__main__":
         drop_l = None
 
     # set (and create) output directory
-    out_dir = "outputs_2L/"
+    out_dir = "outputs_2L_rnd/"
     out_dir += f"{scaling}/"
     out_dir += f"N_{N:04d}/"
     out_dir += f"{drop_l}/"

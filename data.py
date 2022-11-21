@@ -8,7 +8,9 @@ class LinearRegressionDataset(torch.utils.data.Dataset):
     - n_samples: number of samples in the dataset
     '''
     def __init__ (self, N, n_samples):
-        w_star = np.ones(N)/np.sqrt(N)
+        # w_star = np.ones(N)/np.sqrt(N)
+        w_star = np.random.randn(N)
+        w_star /= np.linalg.norm(w_star)
 
         # _th = 2*np.pi * np.random.rand(n_samples); _v = 0.2*np.random.randn(n_samples, N)
         # X = (np.cos(_th)**2)[:, None] * w_star[None,:] + (np.sin(_th)**2)[:,None] * _v
