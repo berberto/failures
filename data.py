@@ -7,14 +7,13 @@ class LinearRegressionDataset(torch.utils.data.Dataset):
     - N: dimensionality of the input
     - n_samples: number of samples in the dataset
     '''
-    def __init__ (self, N, n_samples):
-        # w_star = np.ones(N)/np.sqrt(N)
-        w_star = np.random.randn(N)
-        w_star /= np.linalg.norm(w_star)
+    def __init__ (self, w_star, n_samples):
+
+        self.N = len(w_star)
 
         # _th = 2*np.pi * np.random.rand(n_samples); _v = 0.2*np.random.randn(n_samples, N)
         # X = (np.cos(_th)**2)[:, None] * w_star[None,:] + (np.sin(_th)**2)[:,None] * _v
-        X = np.random.randn(n_samples, N)
+        X = np.random.randn(n_samples, self.N)
         y = np.sum(X * w_star[None,:], axis=1)
         self.X = torch.from_numpy(X)
         self.y = torch.from_numpy(y)

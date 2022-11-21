@@ -27,8 +27,8 @@ def plot_weights_histograms (model, out_dir=".", name="init_weights"):
     ax.legend()
     fig.savefig(f"{out_dir}/plot_histo_{name}.svg", bbox_inches="tight")
 
-def generate_data (N, n_samples, **kwargs):
-    dataset = LinearRegressionDataset(N, n_samples)
+def generate_data (w_star, n_samples, **kwargs):
+    dataset = LinearRegressionDataset(w_star, n_samples)
     loader = torch.utils.data.DataLoader(dataset,**kwargs)
     return loader
 
@@ -109,8 +109,11 @@ if __name__ == "__main__":
         model.save(f"{out_dir}/model_init")
 
         print(model)
-        test_loader = generate_data(N, n_test, **test_kwargs)
-        train_loader = generate_data(N, n_train, **train_kwargs)
+        # w_star = np.ones(N)/np.sqrt(N)
+        w_star = np.random.randn(N)
+        w_star /= np.linalg.norm(w_star)
+        test_loader = generate_data(w_star, n_test, **test_kwargs)
+        train_loader = generate_data(w_star, n_train, **train_kwargs)
 
         for epoch in range(n_epochs + 1):
             # train (except on the first epoch)
