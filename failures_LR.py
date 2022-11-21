@@ -163,11 +163,27 @@ if __name__ == "__main__":
         # select dominant modes
         mode = np.argmax(S, axis=1)
         eval1 = S[np.arange(len(mode)), mode] #  np.take(S, mode, axis=1)
-        Rvec1 = U[np.arange(len(mode)), mode] #  np.take(U, mode, axis=1)
-        Lvec1 = V[np.arange(len(mode)), mode] #  np.take(V, mode, axis=1)
+        U1 = U[np.arange(len(mode)), :, mode] #  np.take(U, mode, axis=1)
+        V1 = V[np.arange(len(mode)), mode] #  np.take(V, mode, axis=1)
 
-        L1_dot_wst = np.sum(Lvec1/np.sqrt(N), axis=1)
-        R1_dot_w2 = np.sum(Rvec1/W2, axis=1)/np.linalg.norm(1/W2, axis=1)
+        # plt.figure()
+        # plt.hist(U1[-1], alpha=0.4)
+
+        # plt.figure()
+        # plt.hist(V1[-1], alpha=0.4)
+        # plt.show()
+
+        # plt.plot(np.sum(U1*U1[0][None,:], axis=1)[:50])
+        # plt.plot(np.sum(W2*W2[0][None,:], axis=1)[:50])
+        # plt.plot((np.sum(U1*W2, axis=1)/np.sqrt(np.sum(W2*W2, axis=1)))[:50])
+        # plt.show()
+
+        # print(np.allclose(np.linalg.norm(V1, axis=1), 1))
+        # print(np.allclose(np.linalg.norm(U1, axis=1), 1))
+
+        # TEST THIS!!!!! -- AND CHECK WHAT HAS TO COME OUT!
+        V1_dot_wst = np.sum(V1/np.sqrt(N), axis=1) # alignment V1 - w_star
+        U1_dot_w2 = np.sum(U1*W2, axis=1)/np.linalg.norm(W2, axis=1) # alignment U1 
 
         # calculate the participation ratio
         PR = np.array([np.sum(s)**2/np.sum(s**2) for s in S])
@@ -176,10 +192,10 @@ if __name__ == "__main__":
         np.save(f"{out_dir}/PR.npy", PR)
         np.save(f"{out_dir}/eigenvalues.npy", S)
         np.save(f"{out_dir}/eval.npy", eval1)
-        np.save(f"{out_dir}/Levec.npy", Lvec1)
-        np.save(f"{out_dir}/Revec.npy", Rvec1)
-        np.save(f"{out_dir}/L1_dot_wst.npy", L1_dot_wst)
-        np.save(f"{out_dir}/R1_dot_w2.npy", R1_dot_w2)
+        np.save(f"{out_dir}/L1.npy", V1)
+        np.save(f"{out_dir}/R1.npy", U1)
+        np.save(f"{out_dir}/V1_dot_wst.npy", V1_dot_wst)
+        np.save(f"{out_dir}/U1_dot_w2.npy", U1_dot_w2)
 
     # ==================================================
     #      PLOTS
@@ -197,10 +213,10 @@ if __name__ == "__main__":
     PR = np.load(f"{out_dir}/PR.npy")
     S = np.load(f"{out_dir}/eigenvalues.npy")
     eval1 = np.load(f"{out_dir}/eval.npy")
-    Lvec1 = np.load(f"{out_dir}/Levec.npy")
-    Rvec1 = np.load(f"{out_dir}/Revec.npy")
-    L1_dot_wst = np.load(f"{out_dir}/L1_dot_wst.npy")
-    R1_dot_w2 = np.load(f"{out_dir}/R1_dot_w2.npy")
+    V1 = np.load(f"{out_dir}/L1.npy")
+    U1 = np.load(f"{out_dir}/R1.npy")
+    V1_dot_wst = np.load(f"{out_dir}/V1_dot_wst.npy")
+    U1_dot_w2 = np.load(f"{out_dir}/U1_dot_w2.npy")
 
     title = f"init {'1/N' if scaling == 'lin' else '1/sqrt(N)'}; N ={N:04d}; drop {drop_l} wp {drop_p:.2f}"
     colors = ['C0', 'C1', 'C2', 'C3']
@@ -229,8 +245,8 @@ if __name__ == "__main__":
     ax.set_ylim([-1,1])
     ax.grid()
     ax.set_ylabel(r'$\cos\theta(u,v)$')
-    ax.plot(saved_epochs, L1_dot_wst, c='C0', label=r'$w^*,\,l_1$')
-    ax.plot(saved_epochs, R1_dot_w2, c='C1', label=r'$w_2,\,r_1$')
+    ax.plot(saved_epochs, V1_dot_wst, c='C0', label=r'$w^*,\,v_1$')
+    ax.plot(saved_epochs, U1_dot_w2, c='C1', label=r'$w_2,\,u_1$')
     ax.legend(loc="upper right", title=r"$u,\,v$")
     fig.savefig(f'{out_dir}/plot_evec_theta.png', bbox_inches="tight")
     plt.close(fig)
