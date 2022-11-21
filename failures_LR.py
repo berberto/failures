@@ -166,6 +166,9 @@ if __name__ == "__main__":
         Rvec1 = U[np.arange(len(mode)), mode] #  np.take(U, mode, axis=1)
         Lvec1 = V[np.arange(len(mode)), mode] #  np.take(V, mode, axis=1)
 
+        L1_dot_wst = np.sum(Lvec1/np.sqrt(N), axis=1)
+        R1_dot_w2 = np.sum(Rvec1/W2, axis=1)/np.linalg.norm(1/W2, axis=1)
+
         # calculate the participation ratio
         PR = np.array([np.sum(s)**2/np.sum(s**2) for s in S])
 
@@ -175,6 +178,8 @@ if __name__ == "__main__":
         np.save(f"{out_dir}/eval.npy", eval1)
         np.save(f"{out_dir}/Levec.npy", Lvec1)
         np.save(f"{out_dir}/Revec.npy", Rvec1)
+        np.save(f"{out_dir}/L1_dot_wst.npy", L1_dot_wst)
+        np.save(f"{out_dir}/R1_dot_w2.npy", R1_dot_w2)
 
     # ==================================================
     #      PLOTS
@@ -194,6 +199,8 @@ if __name__ == "__main__":
     eval1 = np.load(f"{out_dir}/eval.npy")
     Lvec1 = np.load(f"{out_dir}/Levec.npy")
     Rvec1 = np.load(f"{out_dir}/Revec.npy")
+    L1_dot_wst = np.load(f"{out_dir}/L1_dot_wst.npy")
+    R1_dot_w2 = np.load(f"{out_dir}/R1_dot_w2.npy")
 
     title = f"init {'1/N' if scaling == 'lin' else '1/sqrt(N)'}; N ={N:04d}; drop {drop_l} wp {drop_p:.2f}"
     colors = ['C0', 'C1', 'C2', 'C3']
@@ -203,54 +210,89 @@ if __name__ == "__main__":
     ax.set_title(title)
     ax.set_xlabel('epoch')
     ax.set_ylabel(r'$\lambda_1$')
+    ax.grid()
     ln = ax.plot(saved_epochs, eval1, c='C0', label=r"$\lambda_1$")
     ax1 = ax.twinx()
     ln1 = ax1.plot(saved_epochs, PR, c='C1', label="PR")
     ax1.set_ylabel('participation ratio')
     lns = ln+ln1
     labs = [l.get_label() for l in lns]
-    ax.legend(lns, labs, loc=9)
+    ax.legend(lns, labs, loc="right")
     fig.savefig(f'{out_dir}/plot_eval_PR.png', bbox_inches="tight")
+    plt.close(fig)
+
+    # COS OF ANGLE BETWEEN PRINCIPAL COMPOMENTS AND WEIGHTS
+    # (check low rank of W)
+    fig, ax = plt.subplots(figsize=(6, 4))
+    ax.set_title(title)
+    ax.set_xlabel('epoch')
+    ax.set_ylim([-1,1])
+    ax.grid()
+    ax.set_ylabel(r'$\cos\theta(u,v)$')
+    ax.plot(saved_epochs, L1_dot_wst, c='C0', label=r'$w^*,\,l_1$')
+    ax.plot(saved_epochs, R1_dot_w2, c='C1', label=r'$w_2,\,r_1$')
+    ax.legend(loc="upper right", title=r"$u,\,v$")
+    fig.savefig(f'{out_dir}/plot_evec_theta.png', bbox_inches="tight")
+    plt.close(fig)
 
     # SINGULAR VALUES DISTRIBUTION
     fig, ax = plt.subplots(figsize=(6, 4))
     ax.set_title(title)
     ax.set_xlabel('eigenvalue')
     ax.set_ylabel('density')
-    ax.hist(S[0], density=True, bins="sqrt", label="initial", alpha=0.3)
-    ax.hist(S[-1], density=True, bins="sqrt", label="trained", alpha=0.3)
+    ax.hist(S[0], density=True, bins=30, label="initial", alpha=0.3)
+    ax.hist(S[-1], density=True, bins=30, label="trained", alpha=0.3)
     ax.legend(loc="best")
     fig.savefig(f'{out_dir}/plot_eval_distr.png', bbox_inches="tight")
+    plt.close(fig)
 
     # TRAIN AND TEST LOSS
     fig, ax = plt.subplots(figsize=(6, 4))
     ax.scatter(np.arange(len(test_acc)), test_acc, label="test", s=2, c="C1")
     ax.plot(train_loss, label="train", c="C0")
     ax.set_title(title)
+    ax.grid()
+    ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_ylabel('Train and test loss')
     ax.set_xlabel('epoch')
     ax.legend(loc="best")
     fig.savefig(f'{out_dir}/plot_loss.png', bbox_inches="tight")
+    plt.close(fig)
 
     # NORM OF THE WEIGHTS
     fig, ax = plt.subplots(figsize=(6, 4))
     ax.set_title(title)
     ax.set_ylabel('L2 weight norm')
+    ax.grid()
     ax.set_xlabel('epoch')
     ax.set_ylim([0,1])
     for i, (norm, c) in enumerate(zip(weights_norm, colors)):
         ax.plot(saved_epochs, norm/norm[0], c=c, label=f'{i+1}: {norm[0]:.2e}')
     ax.legend(loc='best', title="layer: scale")
     fig.savefig(f'{out_dir}/plot_weights_norm.png', bbox_inches="tight")
+    plt.close(fig)
+
+    # HISTOGRAM OF THE WEIGHTS
+    fig, ax = plt.subplots(figsize=(6, 4))
+    ax.set_title(title)
+    ax.set_xlabel('L2 weight norm (trained)')
+    ax.set_ylabel('density')
+    ax.hist(W1[-1].ravel(), density=True, bins=100, label="W1", alpha=0.3)
+    ax.hist(W2[-1], density=True, bins=100, label="W2", alpha=0.3)
+    ax.legend(loc="best")
+    fig.savefig(f'{out_dir}/plot_weights_histogram.png', bbox_inches="tight")
+    plt.close(fig)
 
     # VARIANCE OF THE HIDDEN LAYER
     fig, ax = plt.subplots(figsize=(6, 4))
     ax.set_title(title)
     ax.set_ylabel('Hidden layer variance')
     ax.set_xlabel('epoch')
+    ax.grid()
     ax.plot(saved_epochs, np.linalg.norm(hidden, axis=1))
     fig.savefig(f'{out_dir}/plot_hidden_layer_variance.png', bbox_inches="tight")
+    plt.close(fig)
 
     # HISTOGRAM OF THE HIDDEN LAYER
     fig, ax = plt.subplots(figsize=(6, 4))
@@ -261,4 +303,5 @@ if __name__ == "__main__":
     ax.hist(hidden[-1], density=True, bins="sqrt", label="trained", alpha=0.3)
     ax.legend(loc="best")
     fig.savefig(f'{out_dir}/plot_hidden_layer_histogram.png', bbox_inches="tight")
+    plt.close(fig)
 
