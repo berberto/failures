@@ -169,24 +169,8 @@ if __name__ == "__main__":
         U1 = U[np.arange(len(mode)), :, mode] #  np.take(U, mode, axis=1)
         V1 = V[np.arange(len(mode)), mode] #  np.take(V, mode, axis=1)
 
-        # plt.figure()
-        # plt.hist(U1[-1], alpha=0.4)
-
-        # plt.figure()
-        # plt.hist(V1[-1], alpha=0.4)
-        # plt.show()
-
-        # plt.plot(np.sum(U1*U1[0][None,:], axis=1)[:50])
-        # plt.plot(np.sum(W2*W2[0][None,:], axis=1)[:50])
-        # plt.plot((np.sum(U1*W2, axis=1)/np.sqrt(np.sum(W2*W2, axis=1)))[:50])
-        # plt.show()
-
-        # print(np.allclose(np.linalg.norm(V1, axis=1), 1))
-        # print(np.allclose(np.linalg.norm(U1, axis=1), 1))
-
-        # TEST THIS!!!!! -- AND CHECK WHAT HAS TO COME OUT!
-        V1_dot_wst = np.sum(V1/np.sqrt(N), axis=1) # alignment V1 - w_star
-        U1_dot_w2 = np.sum(U1*W2, axis=1)/np.linalg.norm(W2, axis=1) # alignment U1 
+        V1_dot_wst = np.sum(V1*w_star[None,:], axis=1) # alignment V1 -- w_star
+        U1_dot_w2 = np.sum(U1*W2, axis=1)/np.linalg.norm(W2, axis=1) # alignment U1 -- W2
 
         # calculate the participation ratio
         PR = np.array([np.sum(s)**2/np.sum(s**2) for s in S])
