@@ -41,8 +41,6 @@ if __name__ == "__main__":
     # ==================================================
     #   SETUP PARAMETERS
 
-    np.random.seed(1871)
-
     # get parameters as inputs
     scaling = sys.argv[1]       # init pars scaling ("lin"=1/N or "sqrt"=1/sqrt(N))
     N = int(sys.argv[2])        # number of input and hidden units
@@ -52,7 +50,7 @@ if __name__ == "__main__":
         drop_l = None
 
     # set (and create) output directory
-    out_dir = "outputs_2L_rnd/"
+    out_dir = "outputs_2L/"
     out_dir += f"{scaling}/"
     out_dir += f"N_{N:04d}/"
     out_dir += f"{drop_l}/"
@@ -94,6 +92,14 @@ if __name__ == "__main__":
 
         print("\nTRAINING ...")
 
+        np.random.seed(1871)
+
+        w_star = np.random.randn(N)
+        w_star /= np.linalg.norm(w_star)
+        np.save(f"{out_dir}/w_star.npy", w_star)
+        test_loader = generate_data(w_star, n_test, **test_kwargs)
+        train_loader = generate_data(w_star, n_train, **train_kwargs)
+
         train_loss = []
         test_acc = []
         weights_norm = []
@@ -109,11 +115,6 @@ if __name__ == "__main__":
         model.save(f"{out_dir}/model_init")
 
         print(model)
-        # w_star = np.ones(N)/np.sqrt(N)
-        w_star = np.random.randn(N)
-        w_star /= np.linalg.norm(w_star)
-        test_loader = generate_data(w_star, n_test, **test_kwargs)
-        train_loader = generate_data(w_star, n_train, **train_kwargs)
 
         for epoch in range(n_epochs + 1):
             # train (except on the first epoch)
@@ -160,29 +161,41 @@ if __name__ == "__main__":
         W1 = weights_list[0]; norm1 = weights_norm[0]
         W2 = weights_list[1]; norm2 = weights_norm[1]
 
+        w_star = np.load(f"{out_dir}/w_star.npy")
+
         # singular value decomposition of W1 for all snapshots
         U, S, V = np.linalg.svd(W1)
 
         # select dominant modes
-        mode = np.argmax(S, axis=1)
-        eval1 = S[np.arange(len(mode)), mode] #  np.take(S, mode, axis=1)
-        U1 = U[np.arange(len(mode)), :, mode] #  np.take(U, mode, axis=1)
-        V1 = V[np.arange(len(mode)), mode] #  np.take(V, mode, axis=1)
+        mode = np.argsort(S, axis=1)[:,::-1].T
+        Sval1 = S[np.arange(len(mode[0])), mode[0]]
+        Sval2 = S[np.arange(len(mode[1])), mode[1]]
+        U1 = U[np.arange(len(mode[0])), :, mode[0]]
+        U2 = U[np.arange(len(mode[1])), :, mode[1]]
+        V1 = V[np.arange(len(mode[0])), mode[0]]
+        V2 = V[np.arange(len(mode[1])), mode[1]]
 
         V1_dot_wst = np.sum(V1*w_star[None,:], axis=1) # alignment V1 -- w_star
         U1_dot_w2 = np.sum(U1*W2, axis=1)/np.linalg.norm(W2, axis=1) # alignment U1 -- W2
+        V2_dot_wst = np.sum(V2*w_star[None,:], axis=1) # alignment V1 -- w_star
+        U2_dot_w2 = np.sum(U2*W2, axis=1)/np.linalg.norm(W2, axis=1) # alignment U1 -- W2
 
         # calculate the participation ratio
         PR = np.array([np.sum(s)**2/np.sum(s**2) for s in S])
 
         # save spectral properties for all stored snapshots
         np.save(f"{out_dir}/PR.npy", PR)
-        np.save(f"{out_dir}/eigenvalues.npy", S)
-        np.save(f"{out_dir}/eval.npy", eval1)
-        np.save(f"{out_dir}/L1.npy", V1)
-        np.save(f"{out_dir}/R1.npy", U1)
+        np.save(f"{out_dir}/s_values.npy", S)
+        np.save(f"{out_dir}/Sval1.npy", Sval1)
+        np.save(f"{out_dir}/Sval2.npy", Sval2)
+        np.save(f"{out_dir}/V1.npy", V1)
+        np.save(f"{out_dir}/V2.npy", V2)
+        np.save(f"{out_dir}/U1.npy", U1)
+        np.save(f"{out_dir}/U2.npy", U2)
         np.save(f"{out_dir}/V1_dot_wst.npy", V1_dot_wst)
+        np.save(f"{out_dir}/V2_dot_wst.npy", V2_dot_wst)
         np.save(f"{out_dir}/U1_dot_w2.npy", U1_dot_w2)
+        np.save(f"{out_dir}/U2_dot_w2.npy", U2_dot_w2)
 
     # ==================================================
     #      PLOTS
@@ -198,12 +211,17 @@ if __name__ == "__main__":
         weights_norm = pickle.load(f)
 
     PR = np.load(f"{out_dir}/PR.npy")
-    S = np.load(f"{out_dir}/eigenvalues.npy")
-    eval1 = np.load(f"{out_dir}/eval.npy")
-    V1 = np.load(f"{out_dir}/L1.npy")
-    U1 = np.load(f"{out_dir}/R1.npy")
+    S = np.load(f"{out_dir}/s_values.npy")
+    Sval1 = np.load(f"{out_dir}/Sval1.npy")
+    Sval2 = np.load(f"{out_dir}/Sval2.npy")
+    V1 = np.load(f"{out_dir}/V1.npy")
+    V2 = np.load(f"{out_dir}/V2.npy")
+    U1 = np.load(f"{out_dir}/U1.npy")
+    U2 = np.load(f"{out_dir}/U2.npy")
     V1_dot_wst = np.load(f"{out_dir}/V1_dot_wst.npy")
+    V2_dot_wst = np.load(f"{out_dir}/V2_dot_wst.npy")
     U1_dot_w2 = np.load(f"{out_dir}/U1_dot_w2.npy")
+    U2_dot_w2 = np.load(f"{out_dir}/U2_dot_w2.npy")
 
     title = f"init {'1/N' if scaling == 'lin' else '1/sqrt(N)'}; N ={N:04d}; drop {drop_l} wp {drop_p:.2f}"
     colors = ['C0', 'C1', 'C2', 'C3']
@@ -212,16 +230,26 @@ if __name__ == "__main__":
     fig, ax = plt.subplots(figsize=(6, 4))
     ax.set_title(title)
     ax.set_xlabel('epoch')
-    ax.set_ylabel(r'$\lambda_1$')
+    ax.set_ylabel('singular value')
     ax.grid()
-    ln = ax.plot(saved_epochs, eval1, c='C0', label=r"$\lambda_1$")
+    ln = ax.plot(saved_epochs, Sval1, c='C0', label=r"$S_1$")
+    ln_ = ax.plot(saved_epochs, Sval2, c='C0', ls="--", label=r"$S_2$")
     ax1 = ax.twinx()
     ln1 = ax1.plot(saved_epochs, PR, c='C1', label="PR")
     ax1.set_ylabel('participation ratio')
-    lns = ln+ln1
+    lns = ln+ln_+ln1
     labs = [l.get_label() for l in lns]
     ax.legend(lns, labs, loc="right")
     fig.savefig(f'{out_dir}/plot_eval_PR.png', bbox_inches="tight")
+    plt.close(fig)
+
+    # BIMODALITY
+    fig, ax = plt.subplots(figsize=(6, 4))
+    ax.set_title(title)
+    ax.set_xlabel(r'$W^{(2)}_j$')
+    ax.set_ylabel(r'$(W^{(1)}\cdot w^*)_j$')
+    ax.scatter(W2[-1], np.sum(W1[-1]*w_star[None,:], axis=1), alpha=0.5, s=.1)
+    fig.savefig(f'{out_dir}/plot_scatter_W.png', bbox_inches="tight")
     plt.close(fig)
 
     # COS OF ANGLE BETWEEN PRINCIPAL COMPOMENTS AND WEIGHTS
@@ -229,19 +257,22 @@ if __name__ == "__main__":
     fig, ax = plt.subplots(figsize=(6, 4))
     ax.set_title(title)
     ax.set_xlabel('epoch')
-    ax.set_ylim([-1,1])
+    ax.set_ylim([0,1.1])
     ax.grid()
-    ax.set_ylabel(r'$\cos\theta(u,v)$')
-    ax.plot(saved_epochs, V1_dot_wst, c='C0', label=r'$w^*,\,v_1$')
-    ax.plot(saved_epochs, U1_dot_w2, c='C1', label=r'$w_2,\,u_1$')
-    ax.legend(loc="upper right", title=r"$u,\,v$")
+    # ax.set_xscale('log')
+    ax.set_ylabel(r'$|\cos\theta(u,v)|$')
+    ax.plot(saved_epochs, np.abs(V1_dot_wst), c='C0', label=r'$w^*, v_1$')
+    ax.plot(saved_epochs, np.abs(V2_dot_wst), c='C0', label=r'$w^*, v_2$', ls="--")
+    ax.plot(saved_epochs, np.abs(U1_dot_w2), c='C1', label=r'$w_2, u_1$')
+    ax.plot(saved_epochs, np.abs(U2_dot_w2), c='C1', label=r'$w_2, u_2$', ls="--")
+    ax.legend(loc="upper right", title=r"$u, v$")
     fig.savefig(f'{out_dir}/plot_evec_theta.png', bbox_inches="tight")
     plt.close(fig)
 
     # SINGULAR VALUES DISTRIBUTION
     fig, ax = plt.subplots(figsize=(6, 4))
     ax.set_title(title)
-    ax.set_xlabel('eigenvalue')
+    ax.set_xlabel('singular value')
     ax.set_ylabel('density')
     ax.hist(S[0], density=True, bins=30, label="initial", alpha=0.3)
     ax.hist(S[-1], density=True, bins=30, label="trained", alpha=0.3)
@@ -268,6 +299,7 @@ if __name__ == "__main__":
     ax.set_title(title)
     ax.set_ylabel('L2 weight norm')
     ax.grid()
+    # ax.set_xscale('log')
     ax.set_xlabel('epoch')
     ax.set_ylim([0,1])
     for i, (norm, c) in enumerate(zip(weights_norm, colors)):
@@ -281,6 +313,7 @@ if __name__ == "__main__":
     ax.set_title(title)
     ax.set_xlabel('L2 weight norm (trained)')
     ax.set_ylabel('density')
+    ax.set_xlim([-1/np.sqrt(N),1/np.sqrt(N)])
     ax.hist(W1[-1].ravel(), density=True, bins=100, label="W1", alpha=0.3)
     ax.hist(W2[-1], density=True, bins=100, label="W2", alpha=0.3)
     ax.legend(loc="best")
