@@ -51,7 +51,7 @@ if __name__ == "__main__":
         drop_l = None
 
     # set (and create) output directory
-    out_dir = "outputs_2L/"
+    out_dir = "outputs_3L/"
     out_dir += f"{scaling}/"
     out_dir += f"N_{N:04d}/"
     out_dir += f"{drop_l}/"
@@ -101,21 +101,19 @@ if __name__ == "__main__":
         test_loader = generate_data(w_star, n_test, **test_kwargs)
         train_loader = generate_data(w_star, n_train, **train_kwargs)
 
+        model = Net(N, layer_type=functools.partial(LinearWeightDropout, drop_p=drop_p), 
+                    bias=False, scaling=scaling, drop_l=drop_l).to(device)
+        optimizer = optim.SGD(model.parameters(), lr=lr, weight_decay=wd)
+
+        model.save(f"{out_dir}/model_init")
+        print(model)
+
         train_loss = []
         test_acc = []
         weights_norm = []
         hidden = []
         model_weights = []
         saved_epochs = []
-
-        # model = Net(N, layer_type=nn.Linear, scaling=scaling, bias=False).to(device)
-        model = Net(N, layer_type=functools.partial(LinearWeightDropout, drop_p=drop_p), bias=False, 
-                    scaling=scaling, drop_l=drop_l).to(device)
-        optimizer = optim.SGD(model.parameters(), lr=lr, weight_decay=wd)
-
-        model.save(f"{out_dir}/model_init")
-
-        print(model)
 
         for epoch in range(n_epochs + 1):
             # train (except on the first epoch)
@@ -135,7 +133,8 @@ if __name__ == "__main__":
                 np.save(f"{out_dir}/saved_epochs.npy", np.array(saved_epochs))
                 np.save(f"{out_dir}/train_loss.npy", np.array(train_loss))
                 np.save(f"{out_dir}/test_loss.npy", np.array(test_acc))
-                np.save(f"{out_dir}/hidden.npy", np.array(hidden))
+                with open(f"{out_dir}/hidden.pkl", "wb") as f:
+                    pickle.dump(hidden, f)
                 with open(f"{out_dir}/weights.pkl", "wb") as f:
                     pickle.dump(model_weights, f)
 
@@ -208,7 +207,8 @@ if __name__ == "__main__":
         saved_epochs = np.load(f"{out_dir}/saved_epochs.npy")
         train_loss = np.load(f"{out_dir}/train_loss.npy")
         test_acc = np.load(f"{out_dir}/test_loss.npy")
-        hidden = np.load(f"{out_dir}/hidden.npy")
+        with open(f"{out_dir}/hidden.pkl", "rb") as f:
+            hidden = pickle.load(f)
         with open(f"{out_dir}/weights_norm.pkl", "rb") as f:
             weights_norm = pickle.load(f)
 

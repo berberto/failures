@@ -36,15 +36,17 @@ def train(model, device, train_loader, optimizer, epoch, log_interval=100, verbo
 def test(model, device, test_loader):
     model.eval()
     test_loss = 0
-    hidden = 0
+    n_layers = len(model)
+    hidden = (n_layers - 1)*[0]
     with torch.no_grad():
         for X, y in test_loader:
             X = X.clone().detach().float().to(device)
             y = y.clone().detach().float().view(-1,1).to(device)
             output, hidden_ = model.forward(X, hidden_layer=True)
             # mean hidden-layer activity
-            hidden_ = np.mean(hidden_.detach().cpu().numpy(), axis=0) # mean over batch data points
-            hidden += hidden_ / len(test_loader)                      # mean over batches
+            for i, h_ in enumerate(hidden_):
+                # mean over datapoints in batch and over batches
+                hidden[i] += np.mean(h_.detach().cpu().numpy(), axis=0) / len(test_loader)                      # mean over batches
             # mean loss (MSE averaged over data points only)
             test_loss += F.mse_loss(output, y, reduction="sum").item() / len(test_loader.dataset)
 

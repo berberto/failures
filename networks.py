@@ -77,3 +77,6 @@ class Net(nn.Module):
 
     def load(self, filename):
         self.load_state_dict(torch.load(filename, map_location=self.device))
+
+    def __len__ (self):
+        return len(self._modules.items())
