@@ -33,14 +33,18 @@ class Net(nn.Module):
         
         l1_type = nn.Linear
         l2_type = nn.Linear
+        l3_type = nn.Linear
         if drop_l is not None:
             if "1" in drop_l:
                 l1_type = layer_type
             if "2" in drop_l:
                 l2_type = layer_type
+            if "3" in drop_l:
+                l3_type = layer_type
 
         self.fc1 = l1_type(N, N, bias=bias)
-        self.fc2 = l2_type(N, 1, bias=bias)
+        self.fc2 = l2_type(N, N, bias=bias)
+        self.fc3 = l3_type(N, 1, bias=bias)
 
         torch.manual_seed(1871)
 
@@ -60,11 +64,11 @@ class Net(nn.Module):
             raise ValueError(f"Invalid scaling option '{scaling}'\nChoose either 'sqrt' or 'lin'")
 
     def forward(self, x, hidden_layer=False):
-        h = self.fc1(x)
-        # h = F.relu(h)
-        out = self.fc2(h)
+        h1 = self.fc1(x)
+        h2 = self.fc2(h1)
+        out = self.fc3(h2)
         if hidden_layer:
-            return out, h
+            return out, [h1,h2]
         else:
             return out
 
