@@ -3,7 +3,7 @@
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --array=1-13
-#SBATCH --job-name=2L100-rnd
+#SBATCH --job-name=3L100-rnd
 #SBATCH --mem=16G
 #SBATCH --time=5-00:00:00
 #SBATCH --mail-type=BEGIN,END,FAIL
