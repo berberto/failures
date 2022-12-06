@@ -17,7 +17,7 @@ def train(model, device, train_loader, optimizer, epoch, log_interval=100, verbo
     for batch_idx, (X, y) in enumerate(train_loader):
         optimizer.zero_grad()
         X = X.clone().detach().float().to(device)
-        y = y.clone().detach().float().view(-1,1).to(device)
+        y = y.clone().detach().float().to(device)
         output = model(X)
         # "sum" or "mean" refers to the sum/average over both batch AND dimension indices
         # e.g. for a batch size of 64 and 10 classes, it is a sum/average of 640 numbers
@@ -41,7 +41,7 @@ def test(model, device, test_loader):
     with torch.no_grad():
         for X, y in test_loader:
             X = X.clone().detach().float().to(device)
-            y = y.clone().detach().float().view(-1,1).to(device)
+            y = y.clone().detach().float().to(device)
             output, hidden_ = model.forward(X, hidden_layer=True)
             # mean hidden-layer activity
             for i, h_ in enumerate(hidden_):

@@ -50,7 +50,7 @@ if __name__ == "__main__":
     if not drop_p:
         drop_l = None
 
-    d_output = 1
+    d_output = 2
     n_layers = 3
 
     # set (and create) output directory

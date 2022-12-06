@@ -9,15 +9,18 @@ class LinearRegressionDataset(torch.utils.data.Dataset):
     '''
     def __init__ (self, w_star, n_samples):
 
-        self.N = len(w_star)
+        self.w = np.atleast_2d(w_star)
+        self.d, self.N = self.w.shape
 
         # _th = 2*np.pi * np.random.rand(n_samples); _v = 0.2*np.random.randn(n_samples, N)
         # X = (np.cos(_th)**2)[:, None] * w_star[None,:] + (np.sin(_th)**2)[:,None] * _v
         X = np.random.randn(n_samples, self.N)
-        y = np.sum(X * w_star[None,:], axis=1)
+        # y = np.sum(X * w_star[None,:], axis=1)
+        # y = np.einsum('ij,kj->ik', X, w_star)
+        y = np.matmul(X, w_star.T)
+
         self.X = torch.from_numpy(X)
         self.y = torch.from_numpy(y)
-        self.w = w_star
 
     def __len__ (self):
         return len(self.X)
