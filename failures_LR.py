@@ -160,42 +160,32 @@ if __name__ == "__main__":
 
         W1 = weights_list[0]; norm1 = weights_norm[0]
         W2 = weights_list[1]; norm2 = weights_norm[1]
+        W3 = weights_list[2]; norm3 = weights_norm[2]
 
         w_star = np.load(f"{out_dir}/w_star.npy")
 
-        # singular value decomposition of W1 for all snapshots
-        U, S, V = np.linalg.svd(W1)
+        # singular value decomposition of w_star
+        Uw, Sw, Vw = np.linalg.svd(np.atleast_2d(w_star))
 
-        # select dominant modes
-        mode = np.argsort(S, axis=1)[:,::-1].T
-        Sval1 = S[np.arange(len(mode[0])), mode[0]]
-        Sval2 = S[np.arange(len(mode[1])), mode[1]]
-        U1 = U[np.arange(len(mode[0])), :, mode[0]]
-        U2 = U[np.arange(len(mode[1])), :, mode[1]]
-        V1 = V[np.arange(len(mode[0])), mode[0]]
-        V2 = V[np.arange(len(mode[1])), mode[1]]
-
-        V1_dot_wst = np.sum(V1*w_star[None,:], axis=1) # alignment V1 -- w_star
-        U1_dot_w2 = np.sum(U1*W2, axis=1)/np.linalg.norm(W2, axis=1) # alignment U1 -- W2
-        V2_dot_wst = np.sum(V2*w_star[None,:], axis=1) # alignment V1 -- w_star
-        U2_dot_w2 = np.sum(U2*W2, axis=1)/np.linalg.norm(W2, axis=1) # alignment U1 -- W2
+        # singular value decomposition of W1 and W2 for all snapshots
+        U1, S1, V1 = np.linalg.svd(W1)
+        U2, S2, V2 = np.linalg.svd(W2)
+        U3, S3, V3 = np.linalg.svd(np.atleast_2d(W3))
 
         # calculate the participation ratio
-        PR = np.array([np.sum(s)**2/np.sum(s**2) for s in S])
+        PR = np.array([np.sum(s)**2/np.sum(s**2) for s in S1])
+
+        with open(f"{out_dir}/SVDw.pkl", "wb") as f:
+            pickle.dump([Uw, Sw, Vw], f)
 
         # save spectral properties for all stored snapshots
+        with open(f"{out_dir}/SVD1.pkl", "wb") as f:
+            pickle.dump([U1, S1, V1], f)
+        with open(f"{out_dir}/SVD2.pkl", "wb") as f:
+            pickle.dump([U2, S2, V2], f)
+        with open(f"{out_dir}/SVD3.pkl", "wb") as f:
+            pickle.dump([U3, S3, V3], f)
         np.save(f"{out_dir}/PR.npy", PR)
-        np.save(f"{out_dir}/s_values.npy", S)
-        np.save(f"{out_dir}/Sval1.npy", Sval1)
-        np.save(f"{out_dir}/Sval2.npy", Sval2)
-        np.save(f"{out_dir}/V1.npy", V1)
-        np.save(f"{out_dir}/V2.npy", V2)
-        np.save(f"{out_dir}/U1.npy", U1)
-        np.save(f"{out_dir}/U2.npy", U2)
-        np.save(f"{out_dir}/V1_dot_wst.npy", V1_dot_wst)
-        np.save(f"{out_dir}/V2_dot_wst.npy", V2_dot_wst)
-        np.save(f"{out_dir}/U1_dot_w2.npy", U1_dot_w2)
-        np.save(f"{out_dir}/U2_dot_w2.npy", U2_dot_w2)
 
     # ==================================================
     #      PLOTS
@@ -211,73 +201,120 @@ if __name__ == "__main__":
             hidden = pickle.load(f)
         with open(f"{out_dir}/weights_norm.pkl", "rb") as f:
             weights_norm = pickle.load(f)
+        with open(f"{out_dir}/SVDw.pkl", "rb") as f:
+            Uw, Sw, Vw = pickle.load(f)
+        with open(f"{out_dir}/SVD1.pkl", "rb") as f:
+            U1, S1, V1 = pickle.load(f)
+        with open(f"{out_dir}/SVD2.pkl", "rb") as f:
+            U2, S2, V2 = pickle.load(f)
+        with open(f"{out_dir}/SVD3.pkl", "rb") as f:
+            U3, S3, V3 = pickle.load(f)
 
         PR = np.load(f"{out_dir}/PR.npy")
-        S = np.load(f"{out_dir}/s_values.npy")
-        Sval1 = np.load(f"{out_dir}/Sval1.npy")
-        Sval2 = np.load(f"{out_dir}/Sval2.npy")
-        V1 = np.load(f"{out_dir}/V1.npy")
-        V2 = np.load(f"{out_dir}/V2.npy")
-        U1 = np.load(f"{out_dir}/U1.npy")
-        U2 = np.load(f"{out_dir}/U2.npy")
-        V1_dot_wst = np.load(f"{out_dir}/V1_dot_wst.npy")
-        V2_dot_wst = np.load(f"{out_dir}/V2_dot_wst.npy")
-        U1_dot_w2 = np.load(f"{out_dir}/U1_dot_w2.npy")
-        U2_dot_w2 = np.load(f"{out_dir}/U2_dot_w2.npy")
 
         title = f"init {'1/N' if scaling == 'lin' else '1/sqrt(N)'}; N ={N:04d}; drop {drop_l} wp {drop_p:.2f}"
         colors = ['C0', 'C1', 'C2', 'C3']
+
+        # ALIGNMENT
+        V2U1 = np.einsum('...ij,...jk->...ik', V2, U1)
+        V3U2 = np.einsum('...ij,...jk->...ik', V3, U2)
+        U3Uw = np.einsum('...ij,...jk->...ik', U3, Uw.T)
+        V1Vw = np.einsum('...ij,...jk->...ik', V1, Vw.T)
+        kwargs=dict(cmap="bwr", vmin=-1, vmax=1, aspect='equal')
+        fig, axs_ = plt.subplots(2, 2, figsize=(6, 6))
+        axs = axs_.ravel()
+        # plt.subplots_adjust(wspace=0.4)
+        plt.subplots_adjust(hspace=0.3)
+        def plot_frame (frame):
+            plt.cla()
+            fig.suptitle(title+f" -- epoch {frame*n_skip}")
+            ax = axs[0]
+            ax.set_title(r"$V^n_2\cdot U^m_1$")
+            ax.set_xlabel(r"$m$")
+            ax.set_ylabel(r"$n$")
+            im = ax.imshow(V2U1[frame, :10, :10], **kwargs)#; plt.colorbar(im, ax=ax)
+            ax = axs[1]
+            ax.set_title(r"$V^n_3\cdot U^m_2$")
+            ax.set_xlabel(r"$m$")
+            ax.set_ylabel(r"$n$")
+            im = ax.imshow(V3U2[frame, :10, :10], **kwargs)#; plt.colorbar(im, ax=ax)
+            ax = axs[2]
+            ax.set_title(r"$U^n_3\cdot \tilde{U}^m$")
+            ax.set_xlabel(r"$m$")
+            ax.set_ylabel(r"$n$")
+            # ax.set_xticks(np.arange(3))
+            # ax.set_yticks(np.arange(3))
+            im = ax.plot(U3Uw[:frame, 0])#; plt.colorbar(im, ax=ax)
+            ax = axs[3]
+            ax.set_title(r"$V^n_1\cdot \tilde{V}^m$")
+            ax.set_xlabel("frame")
+            ax.set_ylabel(r"$n$")
+            im = ax.imshow(V1Vw[frame, :10, :10], **kwargs)#; plt.colorbar(im, ax=ax)
+        plot_frame(len(saved_epochs)-1)
+        fig.savefig(f'{out_dir}/alignment.png', bbox_inches="tight")
+        from matplotlib.animation import FuncAnimation
+        duration=6
+        frames=range(20)
+        dt = duration*1000./20.
+        ani = FuncAnimation(fig, plot_frame,
+                            interval=dt,
+                            frames=frames,
+                            blit=False)
+        ani.save(f'{out_dir}/alignment.gif')
 
         # PARTICIPATION RATIO AND LARGEST SINGULAR VALUE
         fig, ax = plt.subplots(figsize=(6, 4))
         ax.set_title(title)
         ax.set_xlabel('epoch')
-        ax.set_ylabel('singular value')
+        ax.set_ylabel(r'singular values $W_1$', c='C0')
         ax.grid()
-        ln = ax.plot(saved_epochs, Sval1, c='C0', label=r"$S_1$")
-        ln_ = ax.plot(saved_epochs, Sval2, c='C0', ls="--", label=r"$S_2$")
+        ln10 = ax.plot(saved_epochs, S1[:,0], c='C0', label=r"$S^1_1$")
+        ln11 = ax.plot(saved_epochs, S1[:,1], c='C0', ls="--", label=r"$S_1^2$")
+        ln12 = ax.plot(saved_epochs, S1[:,2], c='C0', ls=":", label=r"$S_1^3$")
         ax1 = ax.twinx()
-        ln1 = ax1.plot(saved_epochs, PR, c='C1', label="PR")
-        ax1.set_ylabel('participation ratio')
-        lns = ln+ln_+ln1
+        ln20 = ax1.plot(saved_epochs, S2[:,0], c='C1', label=r"$S_2^1$")
+        ln21 = ax1.plot(saved_epochs, S2[:,1], c='C1', ls="--", label=r"$S_2^2$")
+        # lnPR = ax1.plot(saved_epochs, PR, c='C1', label="PR")
+        ax1.set_ylabel(r'singular values $W_2$', c='C1')
+        lns = ln10+ln11+ln12+ln20+ln21
         labs = [l.get_label() for l in lns]
         ax.legend(lns, labs, loc="right")
         fig.savefig(f'{out_dir}/plot_eval_PR.png', bbox_inches="tight")
         plt.close(fig)
 
-        # BIMODALITY
-        fig, ax = plt.subplots(figsize=(6, 4))
-        ax.set_title(title)
-        ax.set_xlabel(r'$W^{(2)}_j$')
-        ax.set_ylabel(r'$(W^{(1)}\cdot w^*)_j$')
-        ax.scatter(W2[-1], np.sum(W1[-1]*w_star[None,:], axis=1), alpha=0.5, s=.1)
-        fig.savefig(f'{out_dir}/plot_scatter_W.png', bbox_inches="tight")
-        plt.close(fig)
+        # # BIMODALITY
+        # fig, ax = plt.subplots(figsize=(6, 4))
+        # ax.set_title(title)
+        # ax.set_xlabel(r'$W^{(2)}_j$')
+        # ax.set_ylabel(r'$(W^{(1)}\cdot w^*)_j$')
+        # ax.scatter(W2[-1], np.sum(W1[-1]*w_star[None,:], axis=1), alpha=0.5, s=.1)
+        # fig.savefig(f'{out_dir}/plot_scatter_W.png', bbox_inches="tight")
+        # plt.close(fig)
 
-        # COS OF ANGLE BETWEEN PRINCIPAL COMPOMENTS AND WEIGHTS
-        # (check low rank of W)
-        fig, ax = plt.subplots(figsize=(6, 4))
-        ax.set_title(title)
-        ax.set_xlabel('epoch')
-        ax.set_ylim([0,1.1])
-        ax.grid()
-        # ax.set_xscale('log')
-        ax.set_ylabel(r'$|\cos\theta(u,v)|$')
-        ax.plot(saved_epochs, np.abs(V1_dot_wst), c='C0', label=r'$w^*, v_1$')
-        ax.plot(saved_epochs, np.abs(V2_dot_wst), c='C0', label=r'$w^*, v_2$', ls="--")
-        ax.plot(saved_epochs, np.abs(U1_dot_w2), c='C1', label=r'$w_2, u_1$')
-        ax.plot(saved_epochs, np.abs(U2_dot_w2), c='C1', label=r'$w_2, u_2$', ls="--")
-        ax.legend(loc="upper right", title=r"$u, v$")
-        fig.savefig(f'{out_dir}/plot_evec_theta.png', bbox_inches="tight")
-        plt.close(fig)
+        # # COS OF ANGLE BETWEEN PRINCIPAL COMPOMENTS AND WEIGHTS
+        # # (check low rank of W)
+        # fig, ax = plt.subplots(figsize=(6, 4))
+        # ax.set_title(title)
+        # ax.set_xlabel('epoch')
+        # ax.set_ylim([0,1.1])
+        # ax.grid()
+        # # ax.set_xscale('log')
+        # ax.set_ylabel(r'$|\cos\theta(u,v)|$')
+        # ax.plot(saved_epochs, np.abs(V1_dot_wst), c='C0', label=r'$w^*, v_1$')
+        # ax.plot(saved_epochs, np.abs(V2_dot_wst), c='C0', label=r'$w^*, v_2$', ls="--")
+        # ax.plot(saved_epochs, np.abs(U1_dot_w2), c='C1', label=r'$w_2, u_1$')
+        # ax.plot(saved_epochs, np.abs(U2_dot_w2), c='C1', label=r'$w_2, u_2$', ls="--")
+        # ax.legend(loc="upper right", title=r"$u, v$")
+        # fig.savefig(f'{out_dir}/plot_evec_theta.png', bbox_inches="tight")
+        # plt.close(fig)
 
         # SINGULAR VALUES DISTRIBUTION
         fig, ax = plt.subplots(figsize=(6, 4))
         ax.set_title(title)
         ax.set_xlabel('singular value')
         ax.set_ylabel('density')
-        ax.hist(S[0], density=True, bins=30, label="initial", alpha=0.3)
-        ax.hist(S[-1], density=True, bins=30, label="trained", alpha=0.3)
+        ax.hist(S1[0], density=True, bins=30, label="initial", alpha=0.3)
+        ax.hist(S1[-1], density=True, bins=30, label="trained", alpha=0.3)
         ax.legend(loc="best")
         fig.savefig(f'{out_dir}/plot_eval_distr.png', bbox_inches="tight")
         plt.close(fig)
