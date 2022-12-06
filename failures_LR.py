@@ -46,12 +46,15 @@ if __name__ == "__main__":
     scaling = sys.argv[1]       # init pars scaling ("lin"=1/N or "sqrt"=1/sqrt(N))
     N = int(sys.argv[2])        # number of input and hidden units
     drop_p = float(sys.argv[3]) # probability of weight drop
-    drop_l = sys.argv[4]        # layer(s) with dropout ("1", "12" or "2")
+    drop_l = sys.argv[4]        # layer(s) with dropout, combined in a string ("1", "12", "13" etc)
     if not drop_p:
         drop_l = None
 
+    d_output = 1
+    n_layers = 3
+
     # set (and create) output directory
-    out_dir = "outputs_3L/"
+    out_dir = f"outputs_3L_{d_output}d/"
     out_dir += f"{scaling}/"
     out_dir += f"N_{N:04d}/"
     out_dir += f"{drop_l}/"
@@ -71,7 +74,7 @@ if __name__ == "__main__":
 
     n_train = 100000
     n_test = 1000
-    n_skip = min(100, n_epochs//10) # epochs to skip when saving data
+    n_skip = min(100, n_epochs//100) # epochs to skip when saving data
 
     lr = 1e-5
     wd = 0.
@@ -94,14 +97,24 @@ if __name__ == "__main__":
         print("\nTRAINING ...")
 
         np.random.seed(1871)
-
-        w_star = np.random.randn(N)
-        w_star /= np.linalg.norm(w_star)
+        if d_output == 1:
+            w_star = np.random.randn(N)
+            w_star /= np.linalg.norm(w_star)
+        elif d_output == 2:
+            u_1 = np.array([1,1])/np.sqrt(2)
+            u_2 = np.array([-1,1])/np.sqrt(2)
+            v_1 = np.ones(N)/np.sqrt(N)
+            v_2 = np.zeros(N); v_2[0] = 1; v_2[2] = -1; v_2 /= np.sqrt(2)
+            w_star = 1. * u_1[:,None]*v_1[None,:] \
+                   + .2 * u_2[:,None]*v_2[None,:]
+        else:
+            raise ValueError("invalid value of 'd_output'")
+            
         np.save(f"{out_dir}/w_star.npy", w_star)
         test_loader = generate_data(w_star, n_test, **test_kwargs)
         train_loader = generate_data(w_star, n_train, **train_kwargs)
 
-        model = Net(N, layer_type=functools.partial(LinearWeightDropout, drop_p=drop_p), 
+        model = Net(N, d_output=d_output, layer_type=functools.partial(LinearWeightDropout, drop_p=drop_p), 
                     bias=False, scaling=scaling, drop_l=drop_l).to(device)
         optimizer = optim.SGD(model.parameters(), lr=lr, weight_decay=wd)
 

@@ -28,7 +28,7 @@ class LinearWeightDropout(nn.Linear):
 
 
 class Net(nn.Module):
-    def __init__(self, N, layer_type=nn.Linear, scaling="sqrt", drop_l=None, bias=False):
+    def __init__(self, N, d_output=1, layer_type=nn.Linear, scaling="sqrt", drop_l=None, bias=False):
         super(Net, self).__init__()    
         
         l1_type = nn.Linear
@@ -44,7 +44,7 @@ class Net(nn.Module):
 
         self.fc1 = l1_type(N, N, bias=bias)
         self.fc2 = l2_type(N, N, bias=bias)
-        self.fc3 = l3_type(N, 1, bias=bias)
+        self.fc3 = l3_type(N, d_output, bias=bias)
 
         torch.manual_seed(1871)
 

@@ -4,9 +4,9 @@ s_vals=("sqrt")
 
 N_vals=(100)
 
-p_vals=("0.1" "0.25" "0.50" "0.75")
+p_vals=("0.1" "0.50")
 
-d_vals=("1" "2" "12")
+d_vals=("1" "12" "123")
 
 for s in ${s_vals[@]}; do
     for N in ${N_vals[@]}; do

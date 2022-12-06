@@ -5,9 +5,9 @@ s_vals = ["sqrt"]
 
 N_vals = [100]
 
-p_vals = [0.1, 0.25, 0.50, 0.75]
+p_vals = [0.1, 0.5] # [0.1, 0.25, 0.50, 0.75]
 
-d_vals = ["1", "12", "2"]
+d_vals = ["1", "12", "123"] # ["1", "12"]
 
 with open("job_array_pars.txt", "w") as f:
     for s in s_vals:
