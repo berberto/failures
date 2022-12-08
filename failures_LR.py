@@ -46,9 +46,10 @@ if __name__ == "__main__":
     scaling = sys.argv[1]       # init pars scaling ("lin"=1/N or "sqrt"=1/sqrt(N))
     N = int(sys.argv[2])        # number of input and hidden units
     drop_p = float(sys.argv[3]) # probability of weight drop
-    drop_l = sys.argv[4]        # layer(s) with dropout, combined in a string ("1", "12", "13" etc)
     if not drop_p:
         drop_l = None
+    else:
+        drop_l = sys.argv[4]        # layer(s) with dropout, combined in a string ("1", "12", "13" etc)
 
     d_output = 2
     n_layers = 3
@@ -234,7 +235,7 @@ if __name__ == "__main__":
         U3Uw = np.einsum('...ij,...jk->...ik', U3, Uw.T)
         V1Vw = np.einsum('...ij,...jk->...ik', V1, Vw.T)
         kwargs=dict(cmap="bwr", vmin=-1, vmax=1, aspect='equal')
-        fig, axs_ = plt.subplots(2, 2, figsize=(6, 6))
+        fig, axs_ = plt.subplots(1, 3, figsize=(12, 4))
         axs = axs_.ravel()
         # plt.subplots_adjust(wspace=0.4)
         plt.subplots_adjust(hspace=0.3)
@@ -242,27 +243,27 @@ if __name__ == "__main__":
             plt.cla()
             fig.suptitle(title+f" -- epoch {frame*n_skip}")
             ax = axs[0]
-            ax.set_title(r"$V^n_2\cdot U^m_1$")
-            ax.set_xlabel(r"$m$")
-            ax.set_ylabel(r"$n$")
-            im = ax.imshow(V2U1[frame, :10, :10], **kwargs)#; plt.colorbar(im, ax=ax)
-            ax = axs[1]
             ax.set_title(r"$V^n_3\cdot U^m_2$")
             ax.set_xlabel(r"$m$")
             ax.set_ylabel(r"$n$")
-            im = ax.imshow(V3U2[frame, :10, :10], **kwargs)#; plt.colorbar(im, ax=ax)
-            ax = axs[2]
-            ax.set_title(r"$U^n_3\cdot \tilde{U}^m$")
+            im = ax.imshow(V3U2[frame, :d_output+2, :d_output+2], **kwargs)#; plt.colorbar(im, ax=ax)
+            ax = axs[1]
+            ax.set_title(r"$V^n_2\cdot U^m_1$")
             ax.set_xlabel(r"$m$")
             ax.set_ylabel(r"$n$")
+            im = ax.imshow(V2U1[frame, :d_output+2, :d_output+2], **kwargs)#; plt.colorbar(im, ax=ax)
+            ax = axs[2]
+            ax.set_title(r"$V^n_1\cdot \tilde{V}^m$")
+            ax.set_xlabel(r"$m$")
+            ax.set_ylabel(r"$n$")
+            im = ax.imshow(V1Vw[frame, :d_output+2, :d_output+2], **kwargs)#; plt.colorbar(im, ax=ax)
+            # ax = axs[3]
+            # ax.set_title(r"$U^n_3\cdot \tilde{U}^m$")
+            # ax.set_xlabel("frame")
+            # ax.set_ylabel(r"$n$")
             # ax.set_xticks(np.arange(3))
             # ax.set_yticks(np.arange(3))
-            im = ax.plot(U3Uw[:frame, 0])#; plt.colorbar(im, ax=ax)
-            ax = axs[3]
-            ax.set_title(r"$V^n_1\cdot \tilde{V}^m$")
-            ax.set_xlabel("frame")
-            ax.set_ylabel(r"$n$")
-            im = ax.imshow(V1Vw[frame, :10, :10], **kwargs)#; plt.colorbar(im, ax=ax)
+            # im = ax.plot(U3Uw[:frame, 0])#; plt.colorbar(im, ax=ax)
         plot_frame(len(saved_epochs)-1)
         fig.savefig(f'{out_dir}/alignment.png', bbox_inches="tight")
         from matplotlib.animation import FuncAnimation
@@ -274,6 +275,40 @@ if __name__ == "__main__":
                             frames=frames,
                             blit=False)
         ani.save(f'{out_dir}/alignment.gif')
+
+        fig, axs_ = plt.subplots(1, 3, figsize=(14, 4))
+        axs = axs_.ravel()
+        # plt.subplots_adjust(wspace=0.4)
+        plt.subplots_adjust(hspace=0.3)
+        fig.suptitle(title)
+        ax = axs[0]
+        ax.set_ylim([0,1.1])
+        ax.set_xlabel("epoch")
+        ax.set_ylabel(r"$|V^n_3\cdot U^m_2|$")
+        dims = V3U2.shape
+        for i in range(d_output+1): # range(dims[1]):
+            for j in range(d_output+1): #range(dims[2]):
+                c = "C0" if i == j else "C1"
+                ax.plot(saved_epochs, np.abs(V3U2[:, i, j]), c=c)
+        ax = axs[1]
+        ax.set_ylim([0,1.1])
+        ax.set_xlabel("epoch")
+        ax.set_ylabel(r"$|V^n_2\cdot U^m_1|$")
+        dims = V2U1.shape
+        for i in range(d_output+1): # range(dims[1]):
+            for j in range(d_output+1): #range(dims[2]):
+                c = "C0" if i == j else "C1"
+                ax.plot(saved_epochs, np.abs(V2U1[:, i, j]), c=c)
+        ax = axs[2]
+        ax.set_ylim([0,1.1])
+        ax.set_xlabel("epoch")
+        ax.set_ylabel(r"$|V^n_1\cdot \tilde{V}^m|$")
+        dims = V1Vw.shape
+        for i in range(d_output+1): # range(dims[1]):
+            for j in range(d_output+1): #range(dims[2]):
+                c = "C0" if i == j else "C1"
+                ax.plot(saved_epochs, np.abs(V1Vw[:, i, j]), c=c)
+        fig.savefig(f'{out_dir}/alignment_vs_epoch.png', bbox_inches="tight")
 
         # PARTICIPATION RATIO AND LARGEST SINGULAR VALUE
         fig, ax = plt.subplots(figsize=(6, 4))
@@ -293,6 +328,24 @@ if __name__ == "__main__":
         labs = [l.get_label() for l in lns]
         ax.legend(lns, labs, loc="right")
         fig.savefig(f'{out_dir}/plot_eval_PR.png', bbox_inches="tight")
+        plt.close(fig)
+
+        # ALL SINGULAR VALUES
+        fig, axs = plt.subplots(1, 2, figsize=(9, 4))
+        fig.suptitle(title)
+        ax = axs[0]
+        ax.set_title(r"$W_1$")
+        ax.set_xlabel('epoch')
+        ax.set_ylabel('singular value')
+        for s in S1.T:
+            ax.plot(saved_epochs, s)
+        ax = axs[1]
+        ax.set_title(r"$W_2$")
+        ax.set_xlabel('epoch')
+        ax.set_ylabel('singular value')
+        for s in S2.T:
+            ax.plot(saved_epochs, s)
+        fig.savefig(f'{out_dir}/plot_s-values.png', bbox_inches="tight")
         plt.close(fig)
 
         # # BIMODALITY
@@ -355,8 +408,8 @@ if __name__ == "__main__":
         ax.set_xlabel('epoch')
         ax.set_ylim([0,1])
         for i, (norm, c) in enumerate(zip(weights_norm, colors)):
-            ax.plot(saved_epochs, norm/norm[0], c=c, label=f'{i+1}: {norm[0]:.2e}')
-        ax.legend(loc='best', title="layer: scale")
+            ax.plot(saved_epochs, norm/norm[0], c=c, label=f'{i+1}: {norm[0]:.2f}')
+        ax.legend(loc='best', title="layer: init value")
         fig.savefig(f'{out_dir}/plot_weights_norm.png', bbox_inches="tight")
         plt.close(fig)
 
@@ -367,7 +420,7 @@ if __name__ == "__main__":
         ax.set_ylabel('density')
         ax.set_xlim([-1/np.sqrt(N),1/np.sqrt(N)])
         ax.hist(W1[-1].ravel(), density=True, bins=100, label="W1", alpha=0.3)
-        ax.hist(W2[-1], density=True, bins=100, label="W2", alpha=0.3)
+        ax.hist(W2[-1].ravel(), density=True, bins=100, label="W2", alpha=0.3)
         ax.legend(loc="best")
         fig.savefig(f'{out_dir}/plot_weights_histogram.png', bbox_inches="tight")
         plt.close(fig)
@@ -387,8 +440,8 @@ if __name__ == "__main__":
         ax.set_title(title)
         ax.set_xlabel('Hidden layer activity')
         ax.set_ylabel('density')
-        ax.hist(hidden[0], density=True, bins="sqrt", label="initial", alpha=0.3)
-        ax.hist(hidden[-1], density=True, bins="sqrt", label="trained", alpha=0.3)
+        ax.hist(hidden[-1,0], density=True, bins="sqrt", label="initial", alpha=0.3)
+        ax.hist(hidden[-1,1], density=True, bins="sqrt", label="trained", alpha=0.3)
         ax.legend(loc="best")
         fig.savefig(f'{out_dir}/plot_hidden_layer_histogram.png', bbox_inches="tight")
         plt.close(fig)
