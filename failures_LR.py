@@ -11,7 +11,7 @@ import os
 import numpy as np
 import pickle
 
-from networks import LinearWeightDropout, Net
+from networks import LinearWeightDropout, LinearNet2L, LinearNet3L
 from training_utils import train, test
 from data import LinearRegressionDataset
 
@@ -52,10 +52,17 @@ if __name__ == "__main__":
         drop_l = sys.argv[4]        # layer(s) with dropout, combined in a string ("1", "12", "13" etc)
 
     d_output = 2
-    n_layers = 3
+    n_layers = 2
+
+    if n_layers == 2:
+        Net = LinearNet2L
+    elif n_layers == 3:
+        Net = LinearNet3L
+    else:
+        raise ValueError(f"Invalid number of layers, {n_layers}")
 
     # set (and create) output directory
-    out_dir = f"outputs_3L_{d_output}d/"
+    out_dir = f"outputs_{n_layers}L_{d_output}d/"
     out_dir += f"{scaling}/"
     out_dir += f"N_{N:04d}/"
     out_dir += f"{drop_l}/"

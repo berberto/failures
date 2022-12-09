@@ -28,24 +28,8 @@ class LinearWeightDropout(nn.Linear):
 
 
 class Net(nn.Module):
-    def __init__(self, N, d_output=1, layer_type=nn.Linear, scaling="sqrt", drop_l=None, bias=False):
-        super(Net, self).__init__()    
-        
-        l1_type = nn.Linear
-        l2_type = nn.Linear
-        l3_type = nn.Linear
-        if drop_l is not None:
-            if "1" in drop_l:
-                l1_type = layer_type
-            if "2" in drop_l:
-                l2_type = layer_type
-            if "3" in drop_l:
-                l3_type = layer_type
 
-        self.fc1 = l1_type(N, N, bias=bias)
-        self.fc2 = l2_type(N, N, bias=bias)
-        self.fc3 = l3_type(N, d_output, bias=bias)
-
+    def init_weights (self, scaling):
         torch.manual_seed(1871)
 
         if scaling == "lin":
@@ -63,6 +47,62 @@ class Net(nn.Module):
         else:
             raise ValueError(f"Invalid scaling option '{scaling}'\nChoose either 'sqrt' or 'lin'")
 
+    def save(self, filename):
+        torch.save(self.state_dict(), filename)
+
+    def load(self, filename):
+        self.load_state_dict(torch.load(filename, map_location=self.device))
+
+    def __len__ (self):
+        return len(self._modules.items())
+
+
+class LinearNet2L(Net):
+    def __init__(self, N, d_output=1, layer_type=nn.Linear, scaling="sqrt", drop_l=None, bias=False):
+        super(LinearNet2L, self).__init__()
+        
+        l1_type = nn.Linear
+        l2_type = nn.Linear
+        if drop_l is not None:
+            if "1" in drop_l:
+                l1_type = layer_type
+            if "2" in drop_l:
+                l2_type = layer_type
+
+        self.fc1 = l1_type(N, N, bias=bias)
+        self.fc2 = l2_type(N, d_output, bias=bias)
+
+        self.init_weights (scaling)
+
+    def forward(self, x, hidden_layer=False):
+        h1 = self.fc1(x)
+        out = self.fc2(h1)
+        if hidden_layer:
+            return out, [h1]
+        else:
+            return out
+
+class LinearNet3L(Net):
+    def __init__(self, N, d_output=1, layer_type=nn.Linear, scaling="sqrt", drop_l=None, bias=False):
+        super(LinearNet3L, self).__init__()
+        
+        l1_type = nn.Linear
+        l2_type = nn.Linear
+        l3_type = nn.Linear
+        if drop_l is not None:
+            if "1" in drop_l:
+                l1_type = layer_type
+            if "2" in drop_l:
+                l2_type = layer_type
+            if "3" in drop_l:
+                l3_type = layer_type
+
+        self.fc1 = l1_type(N, N, bias=bias)
+        self.fc2 = l2_type(N, N, bias=bias)
+        self.fc3 = l3_type(N, d_output, bias=bias)
+
+        self.init_weights (scaling)
+
     def forward(self, x, hidden_layer=False):
         h1 = self.fc1(x)
         h2 = self.fc2(h1)
@@ -72,11 +112,21 @@ class Net(nn.Module):
         else:
             return out
 
-    def save(self, filename):
-        torch.save(self.state_dict(), filename)
+class ReLUNet2L (LinearNet2L):
+    def forward (self, x, hidden_layer=False):
+        h1 = F.relu(self.fc1(x))
+        out = F.relu(self.fc2(h1))
+        if hidden_layer:
+            return out, [h1]
+        else:
+            return out
 
-    def load(self, filename):
-        self.load_state_dict(torch.load(filename, map_location=self.device))
-
-    def __len__ (self):
-        return len(self._modules.items())
+class ReLUNet3L (LinearNet3L):
+    def forward (self, x, hidden_layer=False):
+        h1 = F.relu(self.fc1(x))
+        h2 = F.relu(self.fc2(h1))
+        out = self.fc3(h2)
+        if hidden_layer:
+            return out, [h1,h2]
+        else:
+            return out
