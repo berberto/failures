@@ -15,6 +15,9 @@ import os
 
 
 class LinearWeightDropout(nn.Linear):
+    '''
+    Linear layer with weights dropout (synaptic failures)
+    '''
     def __init__(self, in_features, out_features, drop_p=0.0, **kwargs):
         super().__init__(in_features, out_features, **kwargs)
         self.drop_p = drop_p
@@ -28,6 +31,10 @@ class LinearWeightDropout(nn.Linear):
 
 
 class Net(nn.Module):
+    '''
+    Base class for network models.
+    Attribute function `init_weights` is a custom weight initialisation.
+    '''
 
     def init_weights (self, scaling):
         torch.manual_seed(1871)
@@ -58,7 +65,12 @@ class Net(nn.Module):
 
 
 class LinearNet2L(Net):
-    def __init__(self, N, d_output=1, layer_type=nn.Linear, scaling="sqrt", drop_l=None, bias=False):
+    '''
+    Base class for feed-forward neural network models with linear layers by default,
+    and with the optional argument `layer_type` to select alternative types of layers
+    for specific layers (indicated in a string through `drop_l` optional argument).
+    '''
+    def __init__(self, d_input, d_output=1, d_hidden=100, layer_type=nn.Linear, scaling="sqrt", drop_l=None, bias=False):
         super(LinearNet2L, self).__init__()
         
         l1_type = nn.Linear
@@ -69,8 +81,8 @@ class LinearNet2L(Net):
             if "2" in drop_l:
                 l2_type = layer_type
 
-        self.fc1 = l1_type(N, N, bias=bias)
-        self.fc2 = l2_type(N, d_output, bias=bias)
+        self.fc1 = l1_type(d_input, d_hidden, bias=bias)
+        self.fc2 = l2_type(d_hidden, d_output, bias=bias)
 
         self.init_weights (scaling)
 
@@ -83,7 +95,12 @@ class LinearNet2L(Net):
             return out
 
 class LinearNet3L(Net):
-    def __init__(self, N, d_output=1, layer_type=nn.Linear, scaling="sqrt", drop_l=None, bias=False):
+    '''
+    Base class for feed-forward neural network models with linear layers by default,
+    and with the optional argument `layer_type` to select alternative types of layers
+    for specific layers (indicated in a string through `drop_l` optional argument).
+    '''
+    def __init__(self, d_input, d_output=1, d_hidden=100, layer_type=nn.Linear, scaling="sqrt", drop_l=None, bias=False):
         super(LinearNet3L, self).__init__()
         
         l1_type = nn.Linear
@@ -97,9 +114,9 @@ class LinearNet3L(Net):
             if "3" in drop_l:
                 l3_type = layer_type
 
-        self.fc1 = l1_type(N, N, bias=bias)
-        self.fc2 = l2_type(N, N, bias=bias)
-        self.fc3 = l3_type(N, d_output, bias=bias)
+        self.fc1 = l1_type(d_input, d_hidden, bias=bias)
+        self.fc2 = l2_type(d_hidden, d_hidden, bias=bias)
+        self.fc3 = l3_type(d_hidden, d_output, bias=bias)
 
         self.init_weights (scaling)
 
@@ -112,20 +129,34 @@ class LinearNet3L(Net):
         else:
             return out
 
-class ReLUNet2L (LinearNet2L):
+class ClassifierNet2L (LinearNet2L):
+    '''
+    Feed forward neural network with 2 fully connected hidden layers,
+    relu non-linearity and softmax output for classification tasks.
+    Adds the ReLU non-linearity to the layers specified as in the 
+    LinearNet2L base class.
+    '''
     def forward (self, x, hidden_layer=False):
+        x = torch.flatten(x, start_dim=1)
         h1 = F.relu(self.fc1(x))
-        out = F.relu(self.fc2(h1))
+        out = F.softmax(self.fc2(h1), dim=1)
         if hidden_layer:
             return out, [h1]
         else:
             return out
 
-class ReLUNet3L (LinearNet3L):
+class ClassifierNet3L (LinearNet3L):
+    '''
+    Feed forward neural network with 3 fully connected hidden layers,
+    relu non-linearity and softmax output for classification tasks.
+    Adds the ReLU non-linearity to the layers specified as in the 
+    LinearNet3L base class.
+    '''
     def forward (self, x, hidden_layer=False):
+        x = torch.flatten(x, start_dim=1)
         h1 = F.relu(self.fc1(x))
         h2 = F.relu(self.fc2(h1))
-        out = self.fc3(h2)
+        out = F.softmax(self.fc3(h2), dim=1)
         if hidden_layer:
             return out, [h1,h2]
         else:

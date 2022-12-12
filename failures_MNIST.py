@@ -11,9 +11,9 @@ import os
 import numpy as np
 import pickle
 
-from networks import LinearWeightDropout, LinearNet2L, LinearNet3L
-from training_utils import train_regressor as train
-from training_utils import test_regressor as test
+from networks import LinearWeightDropout, ClassifierNet2L, ClassifierNet3L
+from training_utils import train_classifier as train
+from training_utils import test_classifier as test
 from data import LinearRegressionDataset
 
 
@@ -52,18 +52,17 @@ if __name__ == "__main__":
     else:
         drop_l = sys.argv[4]        # layer(s) with dropout, combined in a string ("1", "12", "13" etc)
 
-    d_output = 2
-    n_layers = 2
+    n_layers = 3
 
     if n_layers == 2:
-        Net = LinearNet2L
+        Net = ClassifierNet2L
     elif n_layers == 3:
-        Net = LinearNet3L
+        Net = ClassifierNet3L
     else:
         raise ValueError(f"Invalid number of layers, {n_layers}")
 
     # set (and create) output directory
-    out_dir = f"outputs_{n_layers}L_{d_output}d/"
+    out_dir = f"outputs_MNIST_{n_layers}L/"
     out_dir += f"{scaling}/"
     out_dir += f"N_{N:04d}/"
     out_dir += f"{drop_l}/"
@@ -105,33 +104,25 @@ if __name__ == "__main__":
 
         print("\nTRAINING ...")
 
-        np.random.seed(1871)
-        if d_output == 1:
-            w_star = np.random.randn(N)
-            w_star /= np.linalg.norm(w_star)
-        elif d_output == 2:
-            u_1 = np.array([1,1])/np.sqrt(2)
-            u_2 = np.array([-1,1])/np.sqrt(2)
-            v_1 = np.ones(N)/np.sqrt(N)
-            v_2 = np.zeros(N); v_2[0] = 1; v_2[2] = -1; v_2 /= np.sqrt(2)
-            w_star = 1. * u_1[:,None]*v_1[None,:] \
-                   + .2 * u_2[:,None]*v_2[None,:]
-        else:
-            raise ValueError("invalid value of 'd_output'")
-            
-        np.save(f"{out_dir}/w_star.npy", w_star)
-        test_loader = generate_data(w_star, n_test, **test_kwargs)
-        train_loader = generate_data(w_star, n_train, **train_kwargs)
+        transform=transforms.Compose([
+                transforms.ToTensor(),
+                ])
+        train_dataset = datasets.MNIST('data', train=True, #download=True,
+                            transform=transform)
+        test_dataset = datasets.MNIST('data', train=False,
+                            transform=transform)
+        train_loader = torch.utils.data.DataLoader(train_dataset,**train_kwargs)
+        test_loader = torch.utils.data.DataLoader(test_dataset, **test_kwargs)
 
-        model = Net(N, d_output=d_output, layer_type=functools.partial(LinearWeightDropout, drop_p=drop_p), 
+        model = Net(d_input=28*28, d_output=10, d_hidden=N, layer_type=functools.partial(LinearWeightDropout, drop_p=drop_p), 
                     bias=False, scaling=scaling, drop_l=drop_l).to(device)
         optimizer = optim.SGD(model.parameters(), lr=lr, weight_decay=wd)
 
         model.save(f"{out_dir}/model_init")
         print(model)
 
-        train_loss = []
-        test_acc = []
+        train_loss = []; train_acc = []
+        test_loss = []; test_acc = []
         weights_norm = []
         hidden = []
         model_weights = []
@@ -139,12 +130,12 @@ if __name__ == "__main__":
 
         for epoch in range(n_epochs + 1):
             # train (except on the first epoch)
-            loss = train(model, device, train_loader, optimizer, epoch, log_interval=1000)
+            train_loss_, train_acc_ = train(model, device, train_loader, optimizer, epoch, log_interval=1000)
             # test
-            acc, model_weights_, hidden_ = test(model, device, test_loader)
+            test_loss_, test_acc_, model_weights_, hidden_ = test(model, device, test_loader)
 
-            train_loss.append(loss)
-            test_acc.append(acc)
+            train_loss.append(train_loss_); train_acc.append(train_acc_)
+            test_loss.append(test_loss_); test_acc.append(test_acc_)
             # collect statistics
             if epoch % n_skip == 0:
                 saved_epochs.append(epoch)
@@ -180,23 +171,20 @@ if __name__ == "__main__":
         with open(f"{out_dir}/weights_norm.pkl", "wb") as f:
             pickle.dump(weights_norm, f)
 
+
+
         W1 = weights_list[0]; norm1 = weights_norm[0]
         W2 = weights_list[1]; norm2 = weights_norm[1]
         W3 = weights_list[2]; norm3 = weights_norm[2]
 
-        w_star = np.load(f"{out_dir}/w_star.npy")
-
-        # singular value decomposition of w_star
-        Uw, Sw, Vw = np.linalg.svd(np.atleast_2d(w_star))
-
         # singular value decomposition of W1 and W2 for all snapshots
-        U1, S1, V1 = np.linalg.svd(W1)
-        U2, S2, V2 = np.linalg.svd(W2)
-        U3, S3, V3 = np.linalg.svd(np.atleast_2d(W3))
 
         # calculate the participation ratio
         PR = np.array([np.sum(s)**2/np.sum(s**2) for s in S1])
 
+        U1, S1, V1 = np.linalg.svd(W1)
+        U2, S2, V2 = np.linalg.svd(W2)
+        U3, S3, V3 = np.linalg.svd(np.atleast_2d(W3))
         with open(f"{out_dir}/SVDw.pkl", "wb") as f:
             pickle.dump([Uw, Sw, Vw], f)
 
