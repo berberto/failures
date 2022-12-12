@@ -3,7 +3,7 @@
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --array=1-7
-#SBATCH --job-name=3L100-2d
+#SBATCH --job-name=3L100-MNIST
 #SBATCH --mem=16G
 #SBATCH --time=5-00:00:00
 #SBATCH --mail-type=BEGIN,END,FAIL
@@ -20,4 +20,4 @@ p=${parArray[2]}
 d=${parArray[3]}
 
 python --version
-python failures_LR.py "$s" "$N" "$p" "$d"
+python failures_MNIST.py "$s" "$N" "$p" "$d"
