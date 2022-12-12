@@ -114,7 +114,7 @@ if __name__ == "__main__":
         train_loader = torch.utils.data.DataLoader(train_dataset,**train_kwargs)
         test_loader = torch.utils.data.DataLoader(test_dataset, **test_kwargs)
 
-        model = Net(N, d_output=10, layer_type=functools.partial(LinearWeightDropout, drop_p=drop_p), 
+        model = Net(d_input=28*28, d_output=10, d_hidden=N, layer_type=functools.partial(LinearWeightDropout, drop_p=drop_p), 
                     bias=False, scaling=scaling, drop_l=drop_l).to(device)
         optimizer = optim.SGD(model.parameters(), lr=lr, weight_decay=wd)
 

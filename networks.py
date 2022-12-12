@@ -70,7 +70,7 @@ class LinearNet2L(Net):
     and with the optional argument `layer_type` to select alternative types of layers
     for specific layers (indicated in a string through `drop_l` optional argument).
     '''
-    def __init__(self, N, d_output=1, layer_type=nn.Linear, scaling="sqrt", drop_l=None, bias=False):
+    def __init__(self, d_input, d_output=1, d_hidden=100, layer_type=nn.Linear, scaling="sqrt", drop_l=None, bias=False):
         super(LinearNet2L, self).__init__()
         
         l1_type = nn.Linear
@@ -81,8 +81,8 @@ class LinearNet2L(Net):
             if "2" in drop_l:
                 l2_type = layer_type
 
-        self.fc1 = l1_type(N, N, bias=bias)
-        self.fc2 = l2_type(N, d_output, bias=bias)
+        self.fc1 = l1_type(d_input, d_hidden, bias=bias)
+        self.fc2 = l2_type(d_hidden, d_output, bias=bias)
 
         self.init_weights (scaling)
 
@@ -100,7 +100,7 @@ class LinearNet3L(Net):
     and with the optional argument `layer_type` to select alternative types of layers
     for specific layers (indicated in a string through `drop_l` optional argument).
     '''
-    def __init__(self, N, d_output=1, layer_type=nn.Linear, scaling="sqrt", drop_l=None, bias=False):
+    def __init__(self, d_input, d_output=1, d_hidden=100, layer_type=nn.Linear, scaling="sqrt", drop_l=None, bias=False):
         super(LinearNet3L, self).__init__()
         
         l1_type = nn.Linear
@@ -114,9 +114,9 @@ class LinearNet3L(Net):
             if "3" in drop_l:
                 l3_type = layer_type
 
-        self.fc1 = l1_type(N, N, bias=bias)
-        self.fc2 = l2_type(N, N, bias=bias)
-        self.fc3 = l3_type(N, d_output, bias=bias)
+        self.fc1 = l1_type(d_input, d_hidden, bias=bias)
+        self.fc2 = l2_type(d_hidden, d_hidden, bias=bias)
+        self.fc3 = l3_type(d_hidden, d_output, bias=bias)
 
         self.init_weights (scaling)
 
@@ -137,8 +137,9 @@ class ClassifierNet2L (LinearNet2L):
     LinearNet2L base class.
     '''
     def forward (self, x, hidden_layer=False):
+        x = torch.flatten(x, start_dim=1)
         h1 = F.relu(self.fc1(x))
-        out = F.softmax(self.fc2(h1))
+        out = F.softmax(self.fc2(h1), dim=1)
         if hidden_layer:
             return out, [h1]
         else:
@@ -152,9 +153,10 @@ class ClassifierNet3L (LinearNet3L):
     LinearNet3L base class.
     '''
     def forward (self, x, hidden_layer=False):
+        x = torch.flatten(x, start_dim=1)
         h1 = F.relu(self.fc1(x))
         h2 = F.relu(self.fc2(h1))
-        out = F.softmax(self.fc3(h2))
+        out = F.softmax(self.fc3(h2), dim=1)
         if hidden_layer:
             return out, [h1,h2]
         else:
