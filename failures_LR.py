@@ -16,6 +16,8 @@ from training_utils import train_regressor as train
 from training_utils import test_regressor as test
 from data import LinearRegressionDataset
 
+from stats_utils import run_statistics
+
 
 def plot_weights_histograms (model, out_dir=".", name="init_weights"):
     # histogram of initial parameters
@@ -166,48 +168,9 @@ if __name__ == "__main__":
     if analysis:
 
         print("STATISTICS ...")
+
+        run_statistics(out_dir)
         
-        # get weights and calculate norm
-        with open(f"{out_dir}/weights.pkl", "rb") as f:
-            model_weights_ = pickle.load(f)
-            weights_list = []
-            weights_norm = []
-            svd_list = []
-            for i in range(len(model_weights_[0])):
-                weights_list.append( np.array([np.squeeze(w[i]) for w in model_weights_]) )
-                weights_norm.append( np.array([np.linalg.norm(w[i]) for w in model_weights_]) )
-        
-        with open(f"{out_dir}/weights_norm.pkl", "wb") as f:
-            pickle.dump(weights_norm, f)
-
-        W1 = weights_list[0]; norm1 = weights_norm[0]
-        W2 = weights_list[1]; norm2 = weights_norm[1]
-        W3 = weights_list[2]; norm3 = weights_norm[2]
-
-        w_star = np.load(f"{out_dir}/w_star.npy")
-
-        # singular value decomposition of w_star
-        Uw, Sw, Vw = np.linalg.svd(np.atleast_2d(w_star))
-
-        # singular value decomposition of W1 and W2 for all snapshots
-        U1, S1, V1 = np.linalg.svd(W1)
-        U2, S2, V2 = np.linalg.svd(W2)
-        U3, S3, V3 = np.linalg.svd(np.atleast_2d(W3))
-
-        # calculate the participation ratio
-        PR = np.array([np.sum(s)**2/np.sum(s**2) for s in S1])
-
-        with open(f"{out_dir}/SVDw.pkl", "wb") as f:
-            pickle.dump([Uw, Sw, Vw], f)
-
-        # save spectral properties for all stored snapshots
-        with open(f"{out_dir}/SVD1.pkl", "wb") as f:
-            pickle.dump([U1, S1, V1], f)
-        with open(f"{out_dir}/SVD2.pkl", "wb") as f:
-            pickle.dump([U2, S2, V2], f)
-        with open(f"{out_dir}/SVD3.pkl", "wb") as f:
-            pickle.dump([U3, S3, V3], f)
-        np.save(f"{out_dir}/PR.npy", PR)
 
     # ==================================================
     #      PLOTS
@@ -318,24 +281,15 @@ if __name__ == "__main__":
                 ax.plot(saved_epochs, np.abs(V1Vw[:, i, j]), c=c)
         fig.savefig(f'{out_dir}/alignment_vs_epoch.png', bbox_inches="tight")
 
-        # PARTICIPATION RATIO AND LARGEST SINGULAR VALUE
+        # PARTICIPATION RATIO
         fig, ax = plt.subplots(figsize=(6, 4))
         ax.set_title(title)
         ax.set_xlabel('epoch')
-        ax.set_ylabel(r'singular values $W_1$', c='C0')
-        ax.grid()
-        ln10 = ax.plot(saved_epochs, S1[:,0], c='C0', label=r"$S^1_1$")
-        ln11 = ax.plot(saved_epochs, S1[:,1], c='C0', ls="--", label=r"$S_1^2$")
-        ln12 = ax.plot(saved_epochs, S1[:,2], c='C0', ls=":", label=r"$S_1^3$")
-        ax1 = ax.twinx()
-        ln20 = ax1.plot(saved_epochs, S2[:,0], c='C1', label=r"$S_2^1$")
-        ln21 = ax1.plot(saved_epochs, S2[:,1], c='C1', ls="--", label=r"$S_2^2$")
-        # lnPR = ax1.plot(saved_epochs, PR, c='C1', label="PR")
-        ax1.set_ylabel(r'singular values $W_2$', c='C1')
-        lns = ln10+ln11+ln12+ln20+ln21
-        labs = [l.get_label() for l in lns]
-        ax.legend(lns, labs, loc="right")
-        fig.savefig(f'{out_dir}/plot_eval_PR.png', bbox_inches="tight")
+        ax.set_ylabel('singular values\nparticipation ratio')
+        for i, pr in enumerate(PR[:-1]):
+            ax.plot(saved_epochs, pr, label=f"{i+1}")
+        ax.legend(loc="best", title="layer")
+        fig.savefig(f'{out_dir}/plot_s-values_PR.png', bbox_inches="tight")
         plt.close(fig)
 
         # ALL SINGULAR VALUES
@@ -390,7 +344,7 @@ if __name__ == "__main__":
         ax.hist(S1[0], density=True, bins=30, label="initial", alpha=0.3)
         ax.hist(S1[-1], density=True, bins=30, label="trained", alpha=0.3)
         ax.legend(loc="best")
-        fig.savefig(f'{out_dir}/plot_eval_distr.png', bbox_inches="tight")
+        fig.savefig(f'{out_dir}/plot_s-values_distr.png', bbox_inches="tight")
         plt.close(fig)
 
         # TRAIN AND TEST LOSS
