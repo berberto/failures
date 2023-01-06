@@ -14,26 +14,9 @@ import pickle
 from networks import LinearWeightDropout, LinearNet2L, LinearNet3L
 from training_utils import train_regressor as train
 from training_utils import test_regressor as test
-from data import LinearRegressionDataset
+from data import LinearRegressionDataset, generate_data
 
 from stats_utils import run_statistics
-
-
-def plot_weights_histograms (model, out_dir=".", name="init_weights"):
-    # histogram of initial parameters
-    fig, ax = plt.subplots(figsize=(6, 4))
-    for par_name, par_vals in model.named_parameters():
-        weights_ = par_vals.data.detach().cpu().numpy()
-        ax.hist(weights_.ravel(), density=True, bins="sqrt", alpha=.3, label=par_name)
-        np.save(f"{out_dir}/{name}_{par_name}.npy", weights_)
-    ax.axvline(0.,c="k")
-    ax.legend()
-    fig.savefig(f"{out_dir}/plot_histo_{name}.svg", bbox_inches="tight")
-
-def generate_data (w_star, n_samples, **kwargs):
-    dataset = LinearRegressionDataset(w_star, n_samples)
-    loader = torch.utils.data.DataLoader(dataset,**kwargs)
-    return loader
 
 
 if __name__ == "__main__":

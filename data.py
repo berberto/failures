@@ -25,5 +25,12 @@ class LinearRegressionDataset(torch.utils.data.Dataset):
         return self.X[i], self.y[i]
 
 
+def generate_data (w_star, n_samples, **kwargs):
+    dataset = LinearRegressionDataset(w_star, n_samples)
+    loader = torch.utils.data.DataLoader(dataset,**kwargs)
+    return loader
+
+
 if __name__ == "__main__":
-    data = LinearRegressionDataset(100, 10000)
+    data = LinearRegressionDataset(np.ones(100), 10000)
+
