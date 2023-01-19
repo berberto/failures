@@ -17,6 +17,7 @@ from networks import ClassifierNet2L, ClassifierNet3L
 from training_utils import train_classifier as train
 from training_utils import test_classifier as test
 
+from stats_utils import run_statistics, load_statistics
 
 if __name__ == "__main__":
 
@@ -108,9 +109,8 @@ if __name__ == "__main__":
 
         train_loss = []; train_acc = []
         test_loss = []; test_acc = []
-        weights_norm = []
-        hidden = []
-        model_weights = []
+        hidden = [np.array([]) for _ in range(n_layers - 1)]
+        model_weights = [np.array([]) for _ in range(n_layers)]
         saved_epochs = []
 
         for epoch in range(n_epochs + 1):
@@ -123,18 +123,19 @@ if __name__ == "__main__":
             test_loss.append(test_loss_); test_acc.append(test_acc_)
             # collect statistics
             if epoch % n_skip == 0:
-                saved_epochs.append(epoch)
-                hidden.append(hidden_)
-                model_weights.append(model_weights_)
-                # save data
                 model.save(f"{out_dir}/model_trained")
+                
+                saved_epochs.append(epoch)
                 np.save(f"{out_dir}/saved_epochs.npy", np.array(saved_epochs))
                 np.save(f"{out_dir}/train_loss.npy", np.array(train_loss))
                 np.save(f"{out_dir}/test_loss.npy", np.array(test_acc))
-                with open(f"{out_dir}/hidden.pkl", "wb") as f:
-                    pickle.dump(hidden, f)
-                with open(f"{out_dir}/weights.pkl", "wb") as f:
-                    pickle.dump(model_weights, f)
+                
+                for l in range(n_layers - 1):
+                    hidden[l] = np.vstack((hidden[l], hidden_[l]))
+                    np.save( f"{out_dir}/hidden_{l+1}.npy", hidden[l] )
+                for l in range(n_layers):
+                    model_weights[l] = np.vstack((model_weights[l], model_weights_[l]))
+                    np.save( f"{out_dir}/weights_{l+1}.npy", model_weights[l] )
 
     # ==================================================
     #      ANALYSIS
@@ -143,44 +144,8 @@ if __name__ == "__main__":
 
         print("STATISTICS ...")
         
-        # get weights and calculate norm
-        with open(f"{out_dir}/weights.pkl", "rb") as f:
-            model_weights_ = pickle.load(f)
-            weights_list = []
-            weights_norm = []
-            svd_list = []
-            for i in range(len(model_weights_[0])):
-                weights_list.append( np.array([np.squeeze(w[i]) for w in model_weights_]) )
-                weights_norm.append( np.array([np.linalg.norm(w[i]) for w in model_weights_]) )
-        
-        with open(f"{out_dir}/weights_norm.pkl", "wb") as f:
-            pickle.dump(weights_norm, f)
+        run_statistics(out_dir)
 
-
-
-        W1 = weights_list[0]; norm1 = weights_norm[0]
-        W2 = weights_list[1]; norm2 = weights_norm[1]
-        W3 = weights_list[2]; norm3 = weights_norm[2]
-
-        # singular value decomposition of W1 and W2 for all snapshots
-
-        # calculate the participation ratio
-        PR = np.array([np.sum(s)**2/np.sum(s**2) for s in S1])
-
-        U1, S1, V1 = np.linalg.svd(W1)
-        U2, S2, V2 = np.linalg.svd(W2)
-        U3, S3, V3 = np.linalg.svd(np.atleast_2d(W3))
-        with open(f"{out_dir}/SVDw.pkl", "wb") as f:
-            pickle.dump([Uw, Sw, Vw], f)
-
-        # save spectral properties for all stored snapshots
-        with open(f"{out_dir}/SVD1.pkl", "wb") as f:
-            pickle.dump([U1, S1, V1], f)
-        with open(f"{out_dir}/SVD2.pkl", "wb") as f:
-            pickle.dump([U2, S2, V2], f)
-        with open(f"{out_dir}/SVD3.pkl", "wb") as f:
-            pickle.dump([U3, S3, V3], f)
-        np.save(f"{out_dir}/PR.npy", PR)
 
     # ==================================================
     #      PLOTS
