@@ -11,7 +11,9 @@ import os
 import numpy as np
 import pickle
 
-from networks import LinearWeightDropout, ClassifierNet2L, ClassifierNet3L
+from networks import LinearWeightDropout
+from networks import LinearNet2L, LinearNet3L
+from networks import ClassifierNet2L, ClassifierNet3L
 from training_utils import train_classifier as train
 from training_utils import test_classifier as test
 
@@ -34,17 +36,20 @@ if __name__ == "__main__":
     else:
         drop_l = sys.argv[4]        # layer(s) with dropout, combined in a string ("1", "12", "13" etc)
 
-    n_layers = 3
+    d_output = 10 # 10 digits in MNIST
+    n_layers = 2
 
     if n_layers == 2:
         Net = ClassifierNet2L
+        # Net = LinearNet2L
     elif n_layers == 3:
         Net = ClassifierNet3L
+        # Net = LinearNet3L
     else:
         raise ValueError(f"Invalid number of layers, {n_layers}")
 
     # set (and create) output directory
-    out_dir = f"outputs_MNIST_{n_layers}L/"
+    out_dir = f"outputs_MNIST/{n_layers}L_relu/"
     out_dir += f"{scaling}/"
     out_dir += f"N_{N:04d}/"
     out_dir += f"{drop_l}/"
@@ -60,17 +65,14 @@ if __name__ == "__main__":
     # ==================================================
     #   SETUP TRAINING
 
-    n_epochs = 100000
+    n_epochs = 1000
+    n_skip = min(1, n_epochs//100) # epochs to skip when saving data
 
-    n_train = 100000
-    n_test = 1000
-    n_skip = min(100, n_epochs//100) # epochs to skip when saving data
-
-    lr = 1e-5
+    lr = 1e-4
     wd = 0.
 
-    train_kwargs = {'batch_size': 1000}
-    test_kwargs = {'batch_size': n_test}
+    train_kwargs = {'batch_size': 100}
+    test_kwargs = {'batch_size': 100}
     use_cuda = True
     cuda_kwargs = {'num_workers': 1,
                     'pin_memory': True,
@@ -88,6 +90,7 @@ if __name__ == "__main__":
 
         transform=transforms.Compose([
                 transforms.ToTensor(),
+                transforms.Lambda(lambda x: torch.flatten(x))
                 ])
         train_dataset = datasets.MNIST('data', train=True, #download=True,
                             transform=transform)

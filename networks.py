@@ -139,7 +139,8 @@ class ClassifierNet2L (LinearNet2L):
     def forward (self, x, hidden_layer=False):
         x = torch.flatten(x, start_dim=1)
         h1 = F.relu(self.fc1(x))
-        out = F.softmax(self.fc2(h1), dim=1)
+        # out = F.softmax(self.fc2(h1), dim=1)
+        out = self.fc2(h1)
         if hidden_layer:
             return out, [h1]
         else:
@@ -156,7 +157,8 @@ class ClassifierNet3L (LinearNet3L):
         x = torch.flatten(x, start_dim=1)
         h1 = F.relu(self.fc1(x))
         h2 = F.relu(self.fc2(h1))
-        out = F.softmax(self.fc3(h2), dim=1)
+        # out = F.softmax(self.fc3(h2), dim=1)
+        out = self.fc3(h2)
         if hidden_layer:
             return out, [h1,h2]
         else:
