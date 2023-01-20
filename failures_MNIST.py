@@ -67,7 +67,7 @@ if __name__ == "__main__":
     #   SETUP TRAINING
 
     n_epochs = 1000
-    n_skip = min(1, n_epochs//100) # epochs to skip when saving data
+    n_skip = 10  # epochs to skip when saving data
 
     lr = 1e-4
     wd = 0.
@@ -127,8 +127,8 @@ if __name__ == "__main__":
                 
                 saved_epochs.append(epoch)
                 np.save(f"{out_dir}/saved_epochs.npy", np.array(saved_epochs))
-                np.save(f"{out_dir}/train_loss.npy", np.array(train_loss))
-                np.save(f"{out_dir}/test_loss.npy", np.array(test_acc))
+                np.save(f"{out_dir}/train_loss.npy", np.array([train_loss, train_acc]))
+                np.save(f"{out_dir}/test_loss.npy", np.array([test_loss, test_acc]))
                 
                 for l in range(n_layers - 1):
                     hidden[l] = np.vstack((hidden[l], hidden_[l]))
@@ -153,26 +153,19 @@ if __name__ == "__main__":
     if plotting:
         print("PLOTTING ...")
 
+        saved_epochs = np.arange(0,1001,10)
+        np.save(f"{out_dir}/saved_epochs.npy", saved_epochs)
+
         # re-load saved data
         saved_epochs = np.load(f"{out_dir}/saved_epochs.npy")
-        train_loss = np.load(f"{out_dir}/train_loss.npy")
-        test_acc = np.load(f"{out_dir}/test_loss.npy")
-        with open(f"{out_dir}/hidden.pkl", "rb") as f:
-            hidden = pickle.load(f)
-        with open(f"{out_dir}/weights_norm.pkl", "rb") as f:
-            weights_norm = pickle.load(f)
-        with open(f"{out_dir}/SVDw.pkl", "rb") as f:
-            Uw, Sw, Vw = pickle.load(f)
-        with open(f"{out_dir}/SVD1.pkl", "rb") as f:
-            U1, S1, V1 = pickle.load(f)
-        with open(f"{out_dir}/SVD2.pkl", "rb") as f:
-            U2, S2, V2 = pickle.load(f)
-        with open(f"{out_dir}/SVD3.pkl", "rb") as f:
-            U3, S3, V3 = pickle.load(f)
+        train_loss, train_acc = np.load(f"{out_dir}/train_loss.npy")
+        test_loss, test_acc = np.load(f"{out_dir}/test_loss.npy")
+        hidden = [np.load( f"{out_dir}/hidden_{l+1}.npy" ) for l in range(n_layers - 1)]
+        model_weights = [np.load( f"{out_dir}/weights_{l+1}.npy" ) for l in range(n_layers)]
+        
+        weights_norm, (Us, Ss, Vs), projs = load_statistics(out_dir)
 
-        PR = np.load(f"{out_dir}/PR.npy")
-
-        title = f"init {'1/N' if scaling == 'lin' else '1/sqrt(N)'}; N ={N:04d}; drop {drop_l} wp {drop_p:.2f}"
+        title = f"init {'1/N' if scaling == 'lin' else '1/sqrt(N)'}; L={n_layers}; N={N:04d}; drop {drop_l} wp {drop_p:.2f}"
         colors = ['C0', 'C1', 'C2', 'C3']
 
         # ALIGNMENT

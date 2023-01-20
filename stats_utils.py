@@ -1,41 +1,48 @@
 import numpy as np
 import pickle
+import os
 
 
 def run_statistics(out_dir):
 
-    # get weights and calculate norm
-    with open(f"{out_dir}/weights.pkl", "rb") as f:
-        model_weights_ = pickle.load(f)
-        weights_list = []
-        weights_norm = []
-        svd_list = []
-        for i in range(len(model_weights_[0])):
-            weights_list.append( np.array([w[i] for w in model_weights_]) )
-            weights_norm.append( np.array([np.linalg.norm(w[i]) for w in model_weights_]) )
+    weights_list = [np.load(os.path.join(out_dir,file))  for file in os.listdir(out_dir) if "weights_" in file and ".npy" in file]
 
+    weights_norm = [np.linalg.norm(W, axis=(-1,-2)) for W in weights_list]
     with open(f"{out_dir}/weights_norm.pkl", "wb") as f:
         pickle.dump(weights_norm, f)
 
-    w_star = np.load(f"{out_dir}/w_star.npy")
-
-    # singular value decomposition of w_star
-    Uw, Sw, Vw = np.linalg.svd(np.atleast_2d(w_star))
-    with open(f"{out_dir}/SVDw.pkl", "wb") as f:
-        pickle.dump([Uw, Sw, Vw], f)
-
-    # singular value decomposition of W1 and W2 for all snapshots
-    PR = []
-    for i, W in enumerate(weights_list):
+    # singular value decomposition of W's for all snapshots
+    Us = []
+    Ss = []
+    Vs = []
+    for l, W in enumerate(weights_list):
         # calculate the singular value decomposition of the weights
         # if len(W.shape) == 2:
         #     n, d = W.shape
         #     W = np.reshape(W, (n, 1, d))
+        print(f"Layer {l+1}, {W.shape}")
         U, S, Vh = np.linalg.svd(W)
-        # calculate the participation ratio of the singular values
-        PR.append(np.array([np.sum(s)**2/np.sum(s**2) for s in S]))
+        Us.append(U)
+        Ss.append(S)
+        Vs.append(Vh)
 
-        with open(f"{out_dir}/SVD{i+1}.pkl", "wb") as f:
-            pickle.dump([U, S, Vh], f)
+    pickle.dump( Us, open(f"{out_dir}/Us.pkl", "wb") )
+    pickle.dump( Ss, open(f"{out_dir}/Ss.pkl", "wb") )
+    pickle.dump( Vs, open(f"{out_dir}/Vs.pkl", "wb") )
 
-    np.save(f"{out_dir}/PR.npy", np.array(PR))
+    # calculate product between left and right modes in adjacent layers
+    projs = []
+    for l in range(len(weights_list) - 1):
+        projs.append( np.einsum("...ij,...jk->...ik", Vs[l+1], Us[l]) )
+    pickle.dump(projs, open(f"{out_dir}/projs.pkl", "wb"))
+
+
+def load_statistics (out_dir):
+
+    weights_norm = pickle.load( open(f"{out_dir}/weights_norm.pkl", "rb") )
+    Us = pickle.load( open(f"{out_dir}/Us.pkl", "rb") )
+    Ss = pickle.load( open(f"{out_dir}/Ss.pkl", "rb") )
+    Vs = pickle.load( open(f"{out_dir}/Vs.pkl", "rb") )
+    projs = pickle.load( open(f"{out_dir}/projs.pkl", "rb") )
+
+    return weights_norm, (Us, Ss, Vs), projs
