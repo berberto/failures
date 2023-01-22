@@ -4,7 +4,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torchvision import datasets, transforms
-from matplotlib import pyplot as plt
 import functools
 import sys
 import os
@@ -18,6 +17,9 @@ from training_utils import train_classifier as train
 from training_utils import test_classifier as test
 
 from stats_utils import run_statistics, load_statistics
+from plot_utils import (plot_alignment, plot_singular_values,
+                        plot_loss_accuracy, plot_weights,
+                        plot_hidden_units)
 
 if __name__ == "__main__":
 
@@ -137,6 +139,7 @@ if __name__ == "__main__":
                     model_weights[l] = np.vstack((model_weights[l], model_weights_[l]))
                     np.save( f"{out_dir}/weights_{l+1}.npy", model_weights[l] )
 
+
     # ==================================================
     #      ANALYSIS
 
@@ -163,197 +166,15 @@ if __name__ == "__main__":
         weights_norm, (Us, Ss, Vs), projs = load_statistics(out_dir)
 
         title = f"init {'1/N' if scaling == 'lin' else '1/sqrt(N)'}; L={n_layers}; N={N:04d}; drop {drop_l} wp {drop_p:.2f}"
-        colors = ['C0', 'C1', 'C2', 'C3']
 
-        # ALIGNMENT
-        kwargs=dict(vmin=0, vmax=1, aspect='equal') # cmap="bwr", vmin=-1, 
-        cols=max(n_layers-1, 2)
-        fig, axs = plt.subplots(1, cols, figsize=(cols*4, 4))
-        # plt.subplots_adjust(wspace=0.4)
-        plt.subplots_adjust(hspace=0.3)
-        def plot_frame (frame):
-            plt.cla()
-            fig.suptitle(title+f" -- epoch {frame*n_skip}")
-            # plot alignment of intermediate layers
-            for l, proj in enumerate(projs):
-                ax = axs[l]
-                ax.set_xlabel(r"$m$")
-                ax.set_ylabel(r"$n$")
-                ax.set_title(rf"$|V^n_{l+2}\cdot U^m_{l+1}$|")
-                im = ax.imshow(np.abs(proj[frame, :d_output+2, :d_output+2]), **kwargs)#; plt.colorbar(im, ax=ax)
+        plot_alignment (projs, d_output=d_output, epochs=saved_epochs, out_dir=out_dir, title=title)
 
-        plot_frame(len(saved_epochs)-1)
-        fig.savefig(f'{out_dir}/alignment.png', bbox_inches="tight")
-        from matplotlib.animation import FuncAnimation
-        duration = 10 # in s
-        frames = np.linspace(0,len(saved_epochs)-1,51).astype(int)
-        dt = duration*1000./len(frames) # in ms
-        ani = FuncAnimation(fig, plot_frame,
-                            interval=dt,
-                            frames=frames,
-                            blit=False)
-        ani.save(f'{out_dir}/alignment.gif')
+        plot_singular_values (Ss, epochs=saved_epochs, out_dir=out_dir, title=title)
 
+        plot_loss_accuracy (train_loss, test_loss, train_acc, test_acc, epochs=saved_epochs, out_dir=out_dir, title=title)
 
-        # fig, axs_ = plt.subplots(1, 3, figsize=(14, 4))
-        # axs = axs_.ravel()
-        # # plt.subplots_adjust(wspace=0.4)
-        # plt.subplots_adjust(hspace=0.3)
-        # fig.suptitle(title)
-        # ax = axs[0]
-        # ax.set_ylim([0,1.1])
-        # ax.set_xlabel("epoch")
-        # ax.set_ylabel(r"$|V^n_3\cdot U^m_2|$")
-        # dims = V3U2.shape
-        # for i in range(d_output+1): # range(dims[1]):
-        #     for j in range(d_output+1): #range(dims[2]):
-        #         c = "C0" if i == j else "C1"
-        #         ax.plot(saved_epochs, np.abs(V3U2[:, i, j]), c=c)
-        # ax = axs[1]
-        # ax.set_ylim([0,1.1])
-        # ax.set_xlabel("epoch")
-        # ax.set_ylabel(r"$|V^n_2\cdot U^m_1|$")
-        # dims = V2U1.shape
-        # for i in range(d_output+1): # range(dims[1]):
-        #     for j in range(d_output+1): #range(dims[2]):
-        #         c = "C0" if i == j else "C1"
-        #         ax.plot(saved_epochs, np.abs(V2U1[:, i, j]), c=c)
-        # # ax = axs[2]
-        # # ax.set_ylim([0,1.1])
-        # # ax.set_xlabel("epoch")
-        # # ax.set_ylabel(r"$|V^n_1\cdot \tilde{V}^m|$")
-        # # dims = V1Vw.shape
-        # # for i in range(d_output+1): # range(dims[1]):
-        # #     for j in range(d_output+1): #range(dims[2]):
-        # #         c = "C0" if i == j else "C1"
-        # #         ax.plot(saved_epochs, np.abs(V1Vw[:, i, j]), c=c)
-        # fig.savefig(f'{out_dir}/alignment_vs_epoch.png', bbox_inches="tight")
+        plot_weights (model_weights, weights_norm, epochs=saved_epochs, out_dir=out_dir, title=title)
 
-        # PARTICIPATION RATIO AND LARGEST SINGULAR VALUE
-        fig, ax = plt.subplots(figsize=(6, 4))
-        ax.set_title(title)
-        ax.set_xlabel('epoch')
-        ax.set_ylabel('participation ratio / rank')
-        ax.grid()
-        PR = lambda S: np.array([np.sum(s)**2/np.sum(s**2)/len(s) for s in S])
-        for l, S in enumerate(Ss):
-            ax.plot(saved_epochs, PR(S), label=f"{l+1}")
-        ax.legend(loc="best", title="layer")
-        fig.savefig(f'{out_dir}/plot_s-values_PR.png', bbox_inches="tight")
-        plt.close(fig)
+        plot_hidden_units (hidden, epochs=saved_epochs, out_dir='.', title='')
 
-        # ALL SINGULAR VALUES
-        cols=n_layers
-        fig, axs = plt.subplots(1, cols, figsize=(cols*4, 4))
-        if cols == 1:
-            axs = [axs]
-        fig.suptitle(title)
-        for l, S in enumerate(Ss):
-            ax = axs[l]
-            ax.set_title(rf"$W_{l+1}$")
-            ax.set_xlabel('epoch')
-            ax.set_ylabel('singular value')
-            for s in S.T:
-                ax.plot(saved_epochs, s)
-        fig.savefig(f'{out_dir}/plot_s-values.png', bbox_inches="tight")
-        plt.close(fig)
-
-        # SINGULAR VALUES DISTRIBUTION
-        cols=n_layers-1
-        fig, axs = plt.subplots(1, cols, figsize=(cols*4, 4))
-        if cols == 1:
-            axs = [axs]
-        fig.suptitle(title)
-        for l, S in enumerate(Ss[:-1]):
-            ax = axs[l]
-            ax.set_title(rf"$W_{l+1}$")
-            ax.set_xlabel('singular value')
-            ax.set_ylabel('density')
-            ax.hist(S[0], density=True, bins=30, label="initial", alpha=0.4)
-            ax.hist(S[-1], density=True, bins=30, label="trained", alpha=0.4)
-            ax.legend(loc="best")
-        fig.savefig(f'{out_dir}/plot_eval_distr.png', bbox_inches="tight")
-        plt.close(fig)
-
-        # # TRAIN AND TEST LOSS
-        # fig, ax = plt.subplots(figsize=(6, 4))
-        # # ax.scatter(np.arange(len(test_loss)), test_loss, label="test", s=2, c="C1")
-        # # ax.plot(train_loss, label="train", c="C0")
-        # ax.scatter(saved_epochs[::10], test_loss, label="test", s=2, c="C1")
-        # ax.plot(saved_epochs[::10], train_loss, label="train", c="C0")
-        # ax.set_title(title)
-        # ax.grid()
-        # # ax.set_xscale("log")
-        # ax.set_yscale("log")
-        # ax.set_ylabel('Train and test loss')
-        # ax.set_xlabel('epoch')
-        # ax.legend(loc="best")
-        # fig.savefig(f'{out_dir}/plot_loss.png', bbox_inches="tight")
-        # plt.close(fig)
-
-        # # TRAIN AND TEST ACCURACY
-        # fig, ax = plt.subplots(figsize=(6, 4))
-        # # ax.scatter(np.arange(len(test_acc)), test_acc, label="test", s=2, c="C1")
-        # # ax.plot(train_acc, label="train", c="C0")
-        # ax.scatter(saved_epochs[::10], test_acc, label="test", s=2, c="C1")
-        # ax.plot(saved_epochs[::10], train_acc, label="train", c="C0")
-        # ax.set_title(title)
-        # ax.grid()
-        # # ax.set_xscale("log")
-        # ax.set_yscale("log")
-        # ax.set_ylabel('Train and test accuracy')
-        # ax.set_xlabel('epoch')
-        # ax.legend(loc="best")
-        # fig.savefig(f'{out_dir}/plot_accuracy.png', bbox_inches="tight")
-        # plt.close(fig)
-
-        # NORM OF THE WEIGHTS
-        fig, ax = plt.subplots(figsize=(6, 4))
-        ax.set_title(title)
-        ax.set_ylabel('L2 weight norm')
-        ax.grid()
-        ax.set_xscale('log')
-        ax.set_yscale('log')
-        ax.set_xlabel('epoch')
-        # ax.set_ylim([0,1])
-        for i, (norm, c) in enumerate(zip(weights_norm, colors)):
-            ax.plot(saved_epochs, norm/norm[0], c=c, label=f'{i+1}: {norm[0]:.2f}')
-        ax.legend(loc='best', title="layer: init value")
-        fig.savefig(f'{out_dir}/plot_weights_norm.png', bbox_inches="tight")
-        plt.close(fig)
-
-        # HISTOGRAM OF THE WEIGHTS
-        fig, ax = plt.subplots(figsize=(6, 4))
-        ax.set_title(title)
-        ax.set_xlabel('L2 weight norm (trained)')
-        ax.set_ylabel('density')
-        ax.set_xlim([-1/np.sqrt(N),1/np.sqrt(N)])
-        for l, W in enumerate(model_weights):
-            ax.hist(W[-1].ravel(), density=True, bins=100, label=f"W_{l+1}", alpha=0.3)
-        ax.legend(loc="best")
-        fig.savefig(f'{out_dir}/plot_weights_histogram.png', bbox_inches="tight")
-        plt.close(fig)
-
-        # VARIANCE OF THE HIDDEN LAYER
-        fig, ax = plt.subplots(figsize=(6, 4))
-        ax.set_title(title)
-        ax.set_ylabel('Hidden layer norm')
-        ax.set_xlabel('epoch')
-        ax.grid()
-        for l, h in enumerate(hidden):
-            ax.plot(saved_epochs, np.linalg.norm(h, axis=1), label=f"X_{l+1}")
-        ax.legend(loc="best", title="hidden layer")
-        fig.savefig(f'{out_dir}/plot_hidden_layer_norm.png', bbox_inches="tight")
-        plt.close(fig)
-
-        # HISTOGRAM OF THE HIDDEN LAYER(S)
-        fig, ax = plt.subplots(figsize=(6, 4))
-        ax.set_title(title)
-        ax.set_xlabel('Hidden layer activity')
-        ax.set_ylabel('density')
-        for i, h in enumerate(hidden):
-            ax.hist(h[-1], density=True, bins="sqrt", label=f"X_{l+1}", alpha=0.3)
-        ax.legend(loc="best", title="hidden layer")
-        fig.savefig(f'{out_dir}/plot_hidden_layer_histogram.png', bbox_inches="tight")
-        plt.close(fig)
 
