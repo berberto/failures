@@ -1,5 +1,12 @@
 import numpy as np
 import sys
+import os
+from argparse import ArgumentParser
+
+parser = ArgumentParser()
+parser.add_argument('--run', dest='run', action='store_true', default=False, help='Run code serially')
+args = parser.parse_args()
+run = args.run
 
 s_vals = ["sqrt"] # initial parameters scaling
 
@@ -17,11 +24,17 @@ with open("pars_LR.txt", "w") as file:
             for l in l_vals:
                 for d in d_vals:
                     # no drop-out => f = 0
-                    file.write(f"{s}\t{N}\t{l}\t{d}\t0.00\t0\n")
+                    _pars = f"{s}\t{N}\t{l}\t{d}\t0.00\t0"
+                    file.write(_pars+"\n")
+                    if run:
+                        os.system("python failures_LR.py "+_pars)
                     for p in p_vals:
                         # layers to apply failure
                         # f_vals = ["".join([str(j+1) for j in range(i+1)]) for i in range(l)]
                         f_vals = ["".join([str(i+1) for i in range(l)])]
                         for f in f_vals:
                         # if dropout, chose option for layers
-                            file.write(f"{s}\t{N}\t{l}\t{d}\t{p:.2f}\t{f}\n")
+                            _pars = f"{s}\t{N}\t{l}\t{d}\t{p:.2f}\t{f}"
+                            file.write(_pars+"\n")
+                            if run:
+                                os.system("python failures_LR.py "+_pars)
