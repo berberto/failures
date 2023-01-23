@@ -116,9 +116,9 @@ def test_classifier (model, device, test_loader, num_classes=10):
                 model_weights.append(pars.detach().cpu().numpy())
     return test_loss, test_acc, model_weights, hidden
 
-def vstack (stack_1, stack_2):
+def append (stack_1, stack_2):
     if len(stack_1) == 0:
-        stack_1 = stack_2.copy()
+        stack_1 = np.array([stack_2])
     else:
-        stack_1 = np.vstack((stack_1, stack_2))
+        stack_1 = np.append(stack_1, [stack_2], axis=0)
     return stack_1

@@ -15,7 +15,7 @@ from networks import LinearNet2L, LinearNet3L
 from networks import ClassifierNet2L, ClassifierNet3L
 from training_utils import train_classifier as train
 from training_utils import test_classifier as test
-from training_utils import vstack
+from training_utils import append
 
 from stats_utils import run_statistics, load_statistics
 from plot_utils import (plot_alignment, plot_singular_values,
@@ -139,10 +139,10 @@ if __name__ == "__main__":
                 np.save(f"{out_dir}/test_loss.npy", np.array([test_loss, test_acc]))
                 
                 for l in range(n_layers - 1):
-                    hidden[l] = vstack(hidden[l], hidden_[l])
+                    hidden[l] = append(hidden[l], hidden_[l])
                     np.save( f"{out_dir}/hidden_{l+1}.npy", hidden[l] )
                 for l in range(n_layers):
-                    model_weights[l] = vstack(model_weights[l], model_weights_[l])
+                    model_weights[l] = append(model_weights[l], model_weights_[l])
                     np.save( f"{out_dir}/weights_{l+1}.npy", model_weights[l] )
 
 

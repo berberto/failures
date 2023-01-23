@@ -14,7 +14,7 @@ import pickle
 from networks import LinearWeightDropout, LinearNet2L, LinearNet3L
 from training_utils import train_regressor as train
 from training_utils import test_regressor as test
-from training_utils import vstack
+from training_utils import append
 from data import LinearRegressionDataset, generate_data
 
 from stats_utils import run_statistics, load_statistics
@@ -140,10 +140,10 @@ if __name__ == "__main__":
                 np.save(f"{out_dir}/test_loss.npy", np.array(test_acc))
                 
                 for l in range(n_layers - 1):
-                    hidden[l] = vstack(hidden[l], hidden_[l])
+                    hidden[l] = append(hidden[l], hidden_[l])
                     np.save( f"{out_dir}/hidden_{l+1}.npy", hidden[l] )
                 for l in range(n_layers):
-                    model_weights[l] = vstack(model_weights[l], model_weights_[l])
+                    model_weights[l] = append(model_weights[l], model_weights_[l])
                     np.save( f"{out_dir}/weights_{l+1}.npy", model_weights[l] )
 
 
