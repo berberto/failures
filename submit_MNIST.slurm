@@ -4,7 +4,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --array=1-8
 #SBATCH --job-name=MNIST
-#SBATCH --mem=16G
+#SBATCH --mem=64G
 #SBATCH --time=5-00:00:00
 
 module load cuda/11.6

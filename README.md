@@ -24,6 +24,6 @@ Implementation of feed-forward neural networks with synaptic failures (analogous
 	
 	- `LinearRegressionDataset` class: a PyTorch `Dataset` defining output data to be linear in the input, with specified weights `w_star`; wrapping the data inside a `Dataset` class, allows one to use `DataLoader` to load batches of data. 
 
-- `failures_LR` and `failures_MNIST`: main script for linear regression with linear output and for MNIST handwritten digit classification, respectively. The `plotting` section may not work properly, at the moment. See the `sys.argv` lines in the setup section, or `job_array_pars.txt` for the parameters to give as inputs.
+- `failures_LR` and `failures_MNIST`: main script for linear regression with linear output and for MNIST handwritten digit classification, respectively. `pars_LR.py` and `pars_MNIST.py` generate the parameters to pass from command line in the right order.
 
-- `stats_utils`: `run_statistics` function processing the weights, e.g. singular-value decomposition. 
+- `stats_utils`: `run_statistics` function processing the weights, e.g. singular-value decomposition, and `load_statistics` to load the outputs.
