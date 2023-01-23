@@ -14,6 +14,7 @@ import pickle
 from networks import LinearWeightDropout, LinearNet2L, LinearNet3L
 from training_utils import train_regressor as train
 from training_utils import test_regressor as test
+from training_utils import vstack
 from data import LinearRegressionDataset, generate_data
 
 from stats_utils import run_statistics, load_statistics
@@ -22,8 +23,8 @@ from stats_utils import run_statistics, load_statistics
 if __name__ == "__main__":
 
     training = True
-    analysis = False
-    plotting = False
+    analysis = True
+    plotting = True
 
     # ==================================================
     #   SETUP PARAMETERS
@@ -31,21 +32,20 @@ if __name__ == "__main__":
     # get parameters as inputs
     scaling = sys.argv[1]       # init pars scaling ("lin"=1/N or "sqrt"=1/sqrt(N))
     N = int(sys.argv[2])        # number of input and hidden units
-    drop_p = float(sys.argv[3]) # probability of weight drop
+    n_layers = int(sys.argv[3]) # number of layers (hidden + 1)
+    d_output = int(sys.argv[4]) # output dimension
+    drop_p = float(sys.argv[5]) # probability of weight drop
     if not drop_p:
         drop_l = None
     else:
-        drop_l = sys.argv[4]        # layer(s) with dropout, combined in a string ("1", "12", "13" etc)
+        drop_l = sys.argv[6]        # layer(s) with dropout, combined in a string ("1", "12", "13" etc)
 
-    d_output = 2
-    n_layers = 2
+    assert n_layers in [2,3], f"Invalid number of layers, {n_layers}"
 
     if n_layers == 2:
         Net = LinearNet2L
-    elif n_layers == 3:
+    if n_layers == 3:
         Net = LinearNet3L
-    else:
-        raise ValueError(f"Invalid number of layers, {n_layers}")
 
     # set (and create) output directory
     out_dir = f"outputs_LR/{n_layers}L_{d_output}d/"
@@ -65,7 +65,7 @@ if __name__ == "__main__":
     #   SETUP TRAINING
 
     n_epochs = 100000
-    n_skip = 1000 # epochs to skip when saving data
+    n_skip = 100 # epochs to skip when saving data
 
     n_train = 100000
     n_test = 1000
@@ -140,10 +140,10 @@ if __name__ == "__main__":
                 np.save(f"{out_dir}/test_loss.npy", np.array(test_acc))
                 
                 for l in range(n_layers - 1):
-                    hidden[l] = np.vstack((hidden[l], hidden_[l]))
+                    hidden[l] = vstack(hidden[l], hidden_[l])
                     np.save( f"{out_dir}/hidden_{l+1}.npy", hidden[l] )
                 for l in range(n_layers):
-                    model_weights[l] = np.vstack((model_weights[l], model_weights_[l]))
+                    model_weights[l] = vstack(model_weights[l], model_weights_[l])
                     np.save( f"{out_dir}/weights_{l+1}.npy", model_weights[l] )
 
 

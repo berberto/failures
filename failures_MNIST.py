@@ -15,6 +15,7 @@ from networks import LinearNet2L, LinearNet3L
 from networks import ClassifierNet2L, ClassifierNet3L
 from training_utils import train_classifier as train
 from training_utils import test_classifier as test
+from training_utils import vstack
 
 from stats_utils import run_statistics, load_statistics
 from plot_utils import (plot_alignment, plot_singular_values,
@@ -24,35 +25,40 @@ from plot_utils import (plot_alignment, plot_singular_values,
 if __name__ == "__main__":
 
     training = True
-    analysis = False
-    plotting = False
+    analysis = True
+    plotting = True
 
     # ==================================================
     #   SETUP PARAMETERS
 
     # get parameters as inputs
-    scaling = sys.argv[1]       # init pars scaling ("lin"=1/N or "sqrt"=1/sqrt(N))
-    N = int(sys.argv[2])        # number of input and hidden units
-    drop_p = float(sys.argv[3]) # probability of weight drop
+    activation = sys.argv[1]    # hidden layer activation function
+    scaling = sys.argv[2]       # init pars scaling ("lin"=1/N or "sqrt"=1/sqrt(N))
+    N = int(sys.argv[3])        # number of units per hidden layer
+    n_layers = int(sys.argv[4]) # number of layers (hidden + 1)
+    d_output = 10 # 10 digits in MNIST
+    drop_p = float(sys.argv[5]) # probability of weight drop
     if not drop_p:
         drop_l = None
     else:
-        drop_l = sys.argv[4]        # layer(s) with dropout, combined in a string ("1", "12", "13" etc)
+        drop_l = sys.argv[6]        # layer(s) with dropout, combined in a string ("1", "12", "13" etc)
 
-    d_output = 10 # 10 digits in MNIST
-    n_layers = 2
+    assert n_layers in [2,3], f"Invalid number of layers, {n_layers}"
+    assert activation in ["linear", "relu"], f"Invalid activation function, '{activation}'"
 
     if n_layers == 2:
-        Net = ClassifierNet2L
-        # Net = LinearNet2L
+        if activation == "relu":
+            Net = ClassifierNet2L
+        if activation == "linear":
+            Net = LinearNet2L
     elif n_layers == 3:
-        Net = ClassifierNet3L
-        # Net = LinearNet3L
-    else:
-        raise ValueError(f"Invalid number of layers, {n_layers}")
+        if activation == "relu":
+            Net = ClassifierNet3L
+        if activation == "linear":
+            Net = LinearNet3L
 
     # set (and create) output directory
-    out_dir = f"outputs_MNIST/{n_layers}L_relu/"
+    out_dir = f"outputs_MNIST/{n_layers}L_{activation}/"
     out_dir += f"{scaling}/"
     out_dir += f"N_{N:04d}/"
     out_dir += f"{drop_l}/"
@@ -133,10 +139,10 @@ if __name__ == "__main__":
                 np.save(f"{out_dir}/test_loss.npy", np.array([test_loss, test_acc]))
                 
                 for l in range(n_layers - 1):
-                    hidden[l] = np.vstack((hidden[l], hidden_[l]))
+                    hidden[l] = vstack(hidden[l], hidden_[l])
                     np.save( f"{out_dir}/hidden_{l+1}.npy", hidden[l] )
                 for l in range(n_layers):
-                    model_weights[l] = np.vstack((model_weights[l], model_weights_[l]))
+                    model_weights[l] = vstack(model_weights[l], model_weights_[l])
                     np.save( f"{out_dir}/weights_{l+1}.npy", model_weights[l] )
 
 
