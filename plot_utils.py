@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
 
-def plot_alignment (projs, d_output=10, epochs=None, out_dir='.', title=''):
+def plot_alignment_layers (projs, d_output=10, epochs=None, out_dir='.', title=''):
 
     n_layers = len(projs) + 1
     n_snapshots = len(projs[0])
@@ -29,7 +29,7 @@ def plot_alignment (projs, d_output=10, epochs=None, out_dir='.', title=''):
             im = ax.imshow(np.abs(proj[frame, :d_output+2, :d_output+2]), **kwargs)#; plt.colorbar(im, ax=ax)
 
     plot_frame(len(projs[0])-1)
-    fig.savefig(f'{out_dir}/alignment.png', bbox_inches="tight")
+    fig.savefig(f'{out_dir}/plot_alignment_layers_final.png', bbox_inches="tight")
 
     duration = 10 # in s
     n_frames = 50
@@ -39,42 +39,77 @@ def plot_alignment (projs, d_output=10, epochs=None, out_dir='.', title=''):
                         interval=dt,
                         frames=frames,
                         blit=False)
-    ani.save(f'{out_dir}/alignment.gif')
+    ani.save(f'{out_dir}/plot_alignment_layers.gif')
 
-    # fig, axs_ = plt.subplots(1, 3, figsize=(14, 4))
-    # axs = axs_.ravel()
-    # # plt.subplots_adjust(wspace=0.4)
-    # plt.subplots_adjust(hspace=0.3)
-    # fig.suptitle(title)
-    # ax = axs[0]
-    # ax.set_ylim([0,1.1])
-    # ax.set_xlabel("epoch")
-    # ax.set_ylabel(r"$|V^n_3\cdot U^m_2|$")
-    # dims = V3U2.shape
-    # for i in range(d_output+1): # range(dims[1]):
-    #     for j in range(d_output+1): #range(dims[2]):
-    #         c = "C0" if i == j else "C1"
-    #         ax.plot(epochs, np.abs(V3U2[:, i, j]), c=c)
-    # ax = axs[1]
-    # ax.set_ylim([0,1.1])
-    # ax.set_xlabel("epoch")
-    # ax.set_ylabel(r"$|V^n_2\cdot U^m_1|$")
-    # dims = V2U1.shape
-    # for i in range(d_output+1): # range(dims[1]):
-    #     for j in range(d_output+1): #range(dims[2]):
-    #         c = "C0" if i == j else "C1"
-    #         ax.plot(epochs, np.abs(V2U1[:, i, j]), c=c)
-    # # ax = axs[2]
-    # # ax.set_ylim([0,1.1])
-    # # ax.set_xlabel("epoch")
-    # # ax.set_ylabel(r"$|V^n_1\cdot \tilde{V}^m|$")
-    # # dims = V1Vw.shape
-    # # for i in range(d_output+1): # range(dims[1]):
-    # #     for j in range(d_output+1): #range(dims[2]):
-    # #         c = "C0" if i == j else "C1"
-    # #         ax.plot(epochs, np.abs(V1Vw[:, i, j]), c=c)
-    # fig.savefig(f'{out_dir}/alignment_vs_epoch.png', bbox_inches="tight")
+    cols=n_layers-1
+    fig, axs = plt.subplots(1, cols, figsize=(cols*4, 4))
+    if cols == 1:
+        axs = [axs]
+    # plt.subplots_adjust(wspace=0.4)
+    plt.subplots_adjust(hspace=0.3)
+    fig.suptitle(title)
+    for l, proj in enumerate(projs):
+        ax = axs[l]
+        ax.set_ylim([0,1.1])
+        ax.set_xlabel("epoch")
+        ax.set_ylabel(rf"$|V^n_{l+2}\cdot U^m_{l+1}|$")
+        _,n,m = proj[0].shape
+        n = min(n,d_output+2)
+        m = min(m,d_output+2)
+        for i in range(n,m):
+            for j in range(n,m):
+                c = "C0" if i == j else "C1"
+                ax.plot(epochs, np.abs(proj[:, i, j]), c=c)
+    fig.savefig(f'{out_dir}/plot_alignment_layers_epochs.png', bbox_inches="tight")
 
+
+def plot_alignment_wstar (model_weights, w_star, Us,Vs, epochs=None, out_dir='.', title=''):
+    
+    n_layers = len(model_weights)
+    n_snapshots = len(model_weights[0])
+    d_output = model_weights[-1].shape[1]
+    if epochs is None:
+        epochs = np.arange(n_snapshots)
+
+    Uw, Sw, Vhw = np.linalg.svd(np.atleast_2d(w_star))
+    overlaps = [
+        np.dot(Vs[0], Vhw.T), # overlap btw right modes
+        np.dot(Us[-1], Uw.T), # overlap btw left modes
+    ]
+
+    # BIMODALITY
+    fig, ax = plt.subplots(figsize=(6, 4))
+    ax.set_title(title)
+    ax.set_xlabel(r'$W^{(L)}_j$')
+    ax.set_ylabel(r'$(W^{(1)}\cdot w^*)_j$')
+    W1_dot_wstar = np.dot(np.atleast_2d(w_star), model_weights[0][-1].T)
+    for i in range(d_output):
+        ax.scatter(model_weights[-1][-1,i], W1_dot_wstar[i], alpha=0.5, s=.1)
+    fig.savefig(f'{out_dir}/plot_scatter_W.png', bbox_inches="tight")
+    plt.close(fig)
+
+    # COS OF ANGLE BETWEEN PRINCIPAL COMPOMENTS AND WEIGHTS
+    # (check low rank of W)
+    fig, axs = plt.subplots(1,2,figsize=(12, 4))
+    fig.suptitle(title)
+    for ax in axs.ravel():
+        ax.set_xlabel('epoch')
+        ax.set_ylim([0,1.1])
+        ax.grid()
+    axs[0].set_ylabel(r'$|\cos\theta(\tilde{V}, V_1)|$')
+    axs[1].set_ylabel(r'$|\cos\theta(\tilde{U}, U_L)|$')
+    # WHILE TESTING
+    _n = min(len(epochs), len(overlaps[0]))
+    for i in range(2):
+        _,n,m = overlaps[i].shape
+        n = min(n, d_output+2)
+        m = min(m, d_output+2)
+        for j in range(n):
+            axs[i].plot(epochs[:_n], np.abs(overlaps[i])[:_n,j,j], c=f'C{j}')
+            for k in range(j+1,m):
+                axs[i].plot(epochs[:_n], np.abs(overlaps[i])[:_n,j,k], c=f'C{j}', ls='--')
+    fig.savefig(f'{out_dir}/plot_alignment_wstar.png', bbox_inches="tight")
+    plt.close(fig)
 
 
 def plot_singular_values (Ss, epochs=None, out_dir='.', title=''):
@@ -100,8 +135,6 @@ def plot_singular_values (Ss, epochs=None, out_dir='.', title=''):
     # ALL SINGULAR VALUES
     cols=n_layers
     fig, axs = plt.subplots(1, cols, figsize=(cols*4, 4))
-    if cols == 1:
-        axs = [axs]
     fig.suptitle(title)
     for l, S in enumerate(Ss):
         ax = axs[l]

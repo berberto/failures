@@ -18,7 +18,7 @@ from training_utils import test_classifier as test
 from training_utils import append
 
 from stats_utils import run_statistics, load_statistics
-from plot_utils import (plot_alignment, plot_singular_values,
+from plot_utils import (plot_alignment_layers, plot_singular_values,
                         plot_loss_accuracy, plot_weights,
                         plot_hidden_units)
 
@@ -173,7 +173,7 @@ if __name__ == "__main__":
 
         title = f"init {'1/N' if scaling == 'lin' else '1/sqrt(N)'}; L={n_layers}; N={N:04d}; drop {drop_l} wp {drop_p:.2f}"
 
-        plot_alignment (projs, d_output=d_output, epochs=saved_epochs, out_dir=out_dir, title=title)
+        plot_alignment_layers (projs, d_output=d_output, epochs=saved_epochs, out_dir=out_dir, title=title)
 
         plot_singular_values (Ss, epochs=saved_epochs, out_dir=out_dir, title=title)
 

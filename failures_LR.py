@@ -18,9 +18,9 @@ from training_utils import append
 from data import LinearRegressionDataset, generate_data
 
 from stats_utils import run_statistics, load_statistics
-from plot_utils import (plot_alignment, plot_singular_values,
-                        plot_loss_accuracy, plot_weights,
-                        plot_hidden_units)
+from plot_utils import (plot_alignment_layers, plot_alignment_wstar,
+                        plot_singular_values, plot_loss_accuracy,
+                        plot_weights, plot_hidden_units)
 
 
 if __name__ == "__main__":
@@ -172,14 +172,15 @@ if __name__ == "__main__":
         test_loss = np.load(f"{out_dir}/test_loss.npy")
         hidden = [np.load( f"{out_dir}/hidden_{l+1}.npy" ) for l in range(n_layers - 1)]
         model_weights = [np.load( f"{out_dir}/weights_{l+1}.npy" ) for l in range(n_layers)]
-        
+        w_star = np.load(f"{out_dir}/w_star.npy")
+
         weights_norm, (Us, Ss, Vs), projs = load_statistics(out_dir)
 
         title = f"init {'1/N' if scaling == 'lin' else '1/sqrt(N)'}; L={n_layers}; N={N:04d}; drop {drop_l} wp {drop_p:.2f}"
 
-        plot_alignment (projs, d_output=d_output, epochs=saved_epochs, out_dir=out_dir, title=title)
+        plot_alignment_layers (projs, d_output=d_output, epochs=saved_epochs, out_dir=out_dir, title=title)
 
-        plot_overlaps (overlaps, epochs=saved_epochs, out_dir=out_dir, title=title)
+        plot_alignment_wstar (model_weights, w_star, Us,Vs, epochs=saved_epochs, out_dir=out_dir, title=title)
 
         plot_singular_values (Ss, epochs=saved_epochs, out_dir=out_dir, title=title)
 
