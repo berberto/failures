@@ -18,6 +18,9 @@ from training_utils import append
 from data import LinearRegressionDataset, generate_data
 
 from stats_utils import run_statistics, load_statistics
+from plot_utils import (plot_alignment, plot_singular_values,
+                        plot_loss_accuracy, plot_weights,
+                        plot_hidden_units)
 
 
 if __name__ == "__main__":
@@ -165,8 +168,8 @@ if __name__ == "__main__":
 
         # re-load saved data
         saved_epochs = np.load(f"{out_dir}/saved_epochs.npy")
-        train_loss, train_acc = np.load(f"{out_dir}/train_loss.npy")
-        test_loss, test_acc = np.load(f"{out_dir}/test_loss.npy")
+        train_loss = np.load(f"{out_dir}/train_loss.npy")
+        test_loss = np.load(f"{out_dir}/test_loss.npy")
         hidden = [np.load( f"{out_dir}/hidden_{l+1}.npy" ) for l in range(n_layers - 1)]
         model_weights = [np.load( f"{out_dir}/weights_{l+1}.npy" ) for l in range(n_layers)]
         
@@ -176,9 +179,11 @@ if __name__ == "__main__":
 
         plot_alignment (projs, d_output=d_output, epochs=saved_epochs, out_dir=out_dir, title=title)
 
+        plot_overlaps (overlaps, epochs=saved_epochs, out_dir=out_dir, title=title)
+
         plot_singular_values (Ss, epochs=saved_epochs, out_dir=out_dir, title=title)
 
-        plot_loss_accuracy (train_loss, test_loss, train_acc, test_acc, epochs=saved_epochs, out_dir=out_dir, title=title)
+        plot_loss_accuracy (train_loss, test_loss, out_dir=out_dir, title=title)
 
         plot_weights (model_weights, weights_norm, epochs=saved_epochs, out_dir=out_dir, title=title)
 

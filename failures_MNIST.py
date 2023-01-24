@@ -177,10 +177,8 @@ if __name__ == "__main__":
 
         plot_singular_values (Ss, epochs=saved_epochs, out_dir=out_dir, title=title)
 
-        plot_loss_accuracy (train_loss, test_loss, train_acc, test_acc, epochs=saved_epochs, out_dir=out_dir, title=title)
+        plot_loss_accuracy (train_loss, test_loss, train_acc, test_acc, out_dir=out_dir, title=title)
 
         plot_weights (model_weights, weights_norm, epochs=saved_epochs, out_dir=out_dir, title=title)
 
         plot_hidden_units (hidden, epochs=saved_epochs, out_dir='.', title='')
-
-
