@@ -7,12 +7,15 @@ class LinearRegressionDataset(torch.utils.data.Dataset):
     - N: dimensionality of the input
     - n_samples: number of samples in the dataset
     '''
-    def __init__ (self, w_star, n_samples):
+    def __init__ (self, w_star, n_samples, cov=None):
 
         self.w = np.atleast_2d(w_star)
         self.d, self.N = self.w.shape
+        if cov is None:
+            cov = np.eye(self.N)
+        assert len(cov) == self.N, "covariance matrix must have the same dimensions as the input vector"
 
-        X = np.random.randn(n_samples, self.N)
+        X = np.random.multivariate_normal(np.zeros(self.N), cov, size=n_samples)
         y = np.matmul(X, self.w.T)
 
         self.X = torch.from_numpy(X)
