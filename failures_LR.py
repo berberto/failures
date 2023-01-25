@@ -20,7 +20,8 @@ from data import LinearRegressionDataset
 from stats_utils import run_statistics, load_statistics
 from plot_utils import (plot_alignment_layers, plot_alignment_wstar,
                         plot_singular_values, plot_loss_accuracy,
-                        plot_weights, plot_hidden_units)
+                        plot_weights, plot_hidden_units,
+                        plot_covariance)
 
 
 if __name__ == "__main__":
@@ -116,6 +117,10 @@ if __name__ == "__main__":
         train_loader = torch.utils.data.DataLoader(train_dataset,**train_kwargs)
         test_loader = torch.utils.data.DataLoader(test_dataset,**test_kwargs)
 
+        train_data = torch.flatten(train_dataset.data, start_dim=1).numpy()
+        covariance_XX = np.cov(train_data.T)
+        np.save( f"{out_dir}/covariance_XX.npy", covariance_XX )
+
         model = Net(N, d_output=d_output, layer_type=functools.partial(LinearWeightDropout, drop_p=drop_p), 
                     bias=False, scaling=scaling, drop_l=drop_l).to(device)
         optimizer = optim.SGD(model.parameters(), lr=lr, weight_decay=wd)
@@ -177,11 +182,14 @@ if __name__ == "__main__":
         hidden = [np.load( f"{out_dir}/hidden_{l+1}.npy" ) for l in range(n_layers - 1)]
         model_weights = [np.load( f"{out_dir}/weights_{l+1}.npy" ) for l in range(n_layers)]
         w_star = np.load(f"{out_dir}/w_star.npy")
+        covariance_XX = np.load( f"{out_dir}/covariance_XX.npy" )
 
         weights_norm, (Us, Ss, Vs), projs = load_statistics(out_dir)
 
         title = f"init {'1/N' if scaling == 'lin' else '1/sqrt(N)'}; L={n_layers}; N={N:04d}; drop {drop_l} wp {drop_p:.2f}"
 
+        plot_covariance (covariance_XX, d_output=d_output, out_dir=out_dir, title=title)
+        
         plot_alignment_layers (projs, d_output=d_output, epochs=saved_epochs, out_dir=out_dir, title=title)
 
         plot_alignment_wstar (model_weights, w_star, Us,Vs, epochs=saved_epochs, out_dir=out_dir, title=title)
@@ -192,4 +200,4 @@ if __name__ == "__main__":
 
         plot_weights (model_weights, weights_norm, epochs=saved_epochs, out_dir=out_dir, title=title)
 
-        plot_hidden_units (hidden, epochs=saved_epochs, out_dir='.', title='')
+        plot_hidden_units (hidden, epochs=saved_epochs, out_dir=out_dir, title=title)

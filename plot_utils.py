@@ -53,7 +53,7 @@ def plot_alignment_layers (projs, d_output=10, epochs=None, out_dir='.', title='
         ax.set_ylim([0,1.1])
         ax.set_xlabel("epoch")
         ax.set_ylabel(rf"$|V^n_{l+2}\cdot U^m_{l+1}|$")
-        _,n,m = proj[0].shape
+        _,n,m = proj.shape
         n = min(n,d_output+2)
         m = min(m,d_output+2)
         for i in range(n,m):
@@ -98,16 +98,14 @@ def plot_alignment_wstar (model_weights, w_star, Us,Vs, epochs=None, out_dir='.'
         ax.grid()
     axs[0].set_ylabel(r'$|\cos\theta(\tilde{V}, V_1)|$')
     axs[1].set_ylabel(r'$|\cos\theta(\tilde{U}, U_L)|$')
-    # WHILE TESTING
-    _n = min(len(epochs), len(overlaps[0]))
     for i in range(2):
         _,n,m = overlaps[i].shape
         n = min(n, d_output+2)
         m = min(m, d_output+2)
         for j in range(n):
-            axs[i].plot(epochs[:_n], np.abs(overlaps[i])[:_n,j,j], c=f'C{j}')
+            axs[i].plot(epochs, np.abs(overlaps[i])[:,j,j], c=f'C{j}')
             for k in range(j+1,m):
-                axs[i].plot(epochs[:_n], np.abs(overlaps[i])[:_n,j,k], c=f'C{j}', ls='--')
+                axs[i].plot(epochs, np.abs(overlaps[i])[:,j,k], c=f'C{j}', ls='--')
     fig.savefig(f'{out_dir}/plot_alignment_wstar.png', bbox_inches="tight")
     plt.close(fig)
 
@@ -195,8 +193,6 @@ def plot_loss_accuracy (train_loss, test_loss, train_acc=None, test_acc=None, ep
         ax.plot(epochs, train_acc, label="train", c="C0")
         ax.set_title(title)
         ax.grid()
-        # ax.set_xscale("log")
-        ax.set_yscale("log")
         ax.set_ylabel('Train and test accuracy')
         ax.set_xlabel('epoch')
         ax.legend(loc="best")
@@ -269,4 +265,34 @@ def plot_hidden_units (hidden, epochs=None, out_dir='.', title=''):
         ax.hist(h[-1], density=True, bins="sqrt", label=f"X_{l+1}", alpha=0.3)
     ax.legend(loc="best", title="hidden layer")
     fig.savefig(f'{out_dir}/plot_hidden_layer_histogram.png', bbox_inches="tight")
+    plt.close(fig)
+
+
+def plot_covariance (cov, d_output=1, out_dir='.', title=''):
+
+    fig, axs = plt.subplots(1, 2, figsize=(12, 4))
+    fig.suptitle(title)
+    ax = axs[0]
+    ax.set_title("Covariance matrix")
+    ax.set_xlabel('i')
+    ax.set_ylabel('j')
+    im = ax.imshow(cov)
+    fig.colorbar(im, ax=ax)
+    
+    ax = axs[1]
+    ax.set_title("Covariance spectrum")
+    ax.set_yscale("log")
+    ax.set_ylim([1e-5,1])
+    ax.set_xlabel(r'mode, $n$')
+    ax.set_ylabel(r'$\sqrt{\lambda_n}\,/\,N$')
+    S, _ = np.linalg.eig(cov)
+    idx_sorted = np.argsort(S)[::-1]
+    S_sorted = np.abs(S[idx_sorted]) # to remove small imaginary parts
+    ax.plot(np.sqrt(S_sorted)/len(cov))
+    
+    axins = ax.inset_axes([0.15, 0.15, 0.4, 0.4])
+    axins.set_ylim([0,1])
+    _n = 20 # min(d_output + 2, len(cov))
+    axins.plot( np.sqrt(S_sorted[:_n]) / len(cov) )
+    fig.savefig(f'{out_dir}/plot_input_covariance.png', bbox_inches="tight")
     plt.close(fig)
