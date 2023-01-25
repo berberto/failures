@@ -18,17 +18,15 @@ class LinearRegressionDataset(torch.utils.data.Dataset):
         self.X = torch.from_numpy(X)
         self.y = torch.from_numpy(y)
 
+    @property
+    def data(self):
+        return self.X
+
     def __len__ (self):
         return len(self.X)
 
     def __getitem__ (self, i):
         return self.X[i], self.y[i]
-
-
-def generate_data (w_star, n_samples, **kwargs):
-    dataset = LinearRegressionDataset(w_star, n_samples)
-    loader = torch.utils.data.DataLoader(dataset,**kwargs)
-    return loader
 
 
 if __name__ == "__main__":

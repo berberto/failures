@@ -15,7 +15,7 @@ from networks import LinearWeightDropout, LinearNet2L, LinearNet3L
 from training_utils import train_regressor as train
 from training_utils import test_regressor as test
 from training_utils import append
-from data import LinearRegressionDataset, generate_data
+from data import LinearRegressionDataset
 
 from stats_utils import run_statistics, load_statistics
 from plot_utils import (plot_alignment_layers, plot_alignment_wstar,
@@ -109,8 +109,12 @@ if __name__ == "__main__":
             raise ValueError("invalid value of 'd_output'")
             
         np.save(f"{out_dir}/w_star.npy", w_star)
-        test_loader = generate_data(w_star, n_test, **test_kwargs)
-        train_loader = generate_data(w_star, n_train, **train_kwargs)
+
+        train_dataset = LinearRegressionDataset(w_star, n_train)
+        test_dataset = LinearRegressionDataset(w_star, n_test)
+
+        train_loader = torch.utils.data.DataLoader(train_dataset,**train_kwargs)
+        test_loader = torch.utils.data.DataLoader(test_dataset,**test_kwargs)
 
         model = Net(N, d_output=d_output, layer_type=functools.partial(LinearWeightDropout, drop_p=drop_p), 
                     bias=False, scaling=scaling, drop_l=drop_l).to(device)
