@@ -40,19 +40,26 @@ class Net(nn.Module):
         torch.manual_seed(1871)
 
         if scaling == "lin":
-            # initialisation of the weights -- N(1/n, 1/n)
-            for name, pars in self.named_parameters():
-                if "weight" in name:
-                    f_in = 1.*pars.data.size()[1]
-                    pars.data.normal_(1./f_in, 1./f_in)
+            # initialisation of the weights -- N(0, 1/n)
+            scaling_f = lambda f_in: 1./f_in
         elif scaling == "sqrt":
             # initialisation of the weights -- N(0, 1/sqrt(n))
-            for name, pars in self.named_parameters():
-                if "weight" in name:
-                    f_in = 1.*pars.data.size()[1]
-                    pars.data.normal_(0., 1./np.sqrt(f_in))
+            scaling_f = lambda f_in: 1./np.sqrt(f_in)
+        elif isinstance(scaling, float) and scaling > 0:
+            # initialisation of the weights -- N(0, 1/n**alpha)
+            '''
+            UNTESTED
+            '''
+            scaling_f = lambda f_in: 1./np.power(f_in, scaling)
         else:
-            raise ValueError(f"Invalid scaling option '{scaling}'\nChoose either 'sqrt' or 'lin'")
+            raise ValueError(
+                f"Invalid scaling option '{scaling}'\n" + \
+                 "Choose either 'sqrt', 'lin' or a float larger than 0")
+        
+        for name, pars in self.named_parameters():
+            if "weight" in name:
+                f_in = 1.*pars.data.size()[1]
+                pars.data.normal_(0, scaling_f(f_in))
 
     def save(self, filename):
         torch.save(self.state_dict(), filename)
