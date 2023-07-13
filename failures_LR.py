@@ -8,10 +8,11 @@ from matplotlib import pyplot as plt
 import functools
 import sys
 import os
+from os.path import join
 import numpy as np
 import pickle
 
-from networks import LinearWeightDropout, LinearNet2L, LinearNet3L
+from networks import LinearWeightDropout, DeepNet
 from training_utils import train_regressor as train
 from training_utils import test_regressor as test
 from training_utils import append
@@ -44,19 +45,18 @@ if __name__ == "__main__":
     else:
         drop_l = sys.argv[6]        # layer(s) with dropout, combined in a string ("1", "12", "13" etc)
 
-    assert n_layers in [2,3], f"Invalid number of layers, {n_layers}"
-
-    if n_layers == 2:
-        Net = LinearNet2L
-    if n_layers == 3:
-        Net = LinearNet3L
-
     # set (and create) output directory
-    out_dir = f"outputs_LR/{n_layers}L_{d_output}d/"
-    out_dir += f"{scaling}/"
-    out_dir += f"N_{N:04d}/"
-    out_dir += f"{drop_l}/"
-    out_dir += f"q_{drop_p:.2f}"    
+    out_dir = join("outputs_LR", f"{n_layers}L_{d_output}d", scaling)
+    out_dir = join(out_dir, f"N_{N:04d}", f"{drop_l}", f"q_{drop_p:.2f}")
+
+    wd = 0.
+    if drop_p == 0.:
+        try:
+            wd = float(sys.argv[7])
+        except:
+            pass
+        out_dir = join(out_dir, f"wd_{wd:.5f}")
+
     os.makedirs(out_dir, exist_ok=True)
 
     print(f"Output directory:\n\t{out_dir}\n")
@@ -68,14 +68,13 @@ if __name__ == "__main__":
     # ==================================================
     #   SETUP TRAINING
 
-    n_epochs = 100000
+    n_epochs = 1000000
     n_skip = 100 # epochs to skip when saving data
 
     n_train = 100000
     n_test = 1000
 
     lr = 1e-5
-    wd = 0.
 
     train_kwargs = {'batch_size': 1000}
     test_kwargs = {'batch_size': n_test}
@@ -121,8 +120,10 @@ if __name__ == "__main__":
         covariance_XX = np.cov(train_data.T)
         np.save( f"{out_dir}/covariance_XX.npy", covariance_XX )
 
-        model = Net(N, d_output=d_output, layer_type=functools.partial(LinearWeightDropout, drop_p=drop_p), 
+        model = DeepNet(N, d_output=d_output, d_hidden=(n_layers - 1)*[N],
+                    layer_type=functools.partial(LinearWeightDropout, drop_p=drop_p), 
                     bias=False, scaling=scaling, drop_l=drop_l).to(device)
+
         optimizer = optim.SGD(model.parameters(), lr=lr, weight_decay=wd)
 
         model.save(f"{out_dir}/model_init")
