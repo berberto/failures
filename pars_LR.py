@@ -8,11 +8,11 @@ parser.add_argument('--run', dest='run', action='store_true', default=False, hel
 args = parser.parse_args()
 run = args.run
 
-s_vals = ["sqrt"] # initial parameters scaling
+s_vals = ["sqrt", "lin"] # initial parameters scaling
 
 N_vals = [100] # number of units per hidden layer
 
-l_vals = [2,3] # number of layers
+l_vals = [2,3,5,10] # number of layers
 
 d_vals = [1,2] # output dimension
 
@@ -24,17 +24,17 @@ with open("pars_LR.txt", "w") as file:
             for l in l_vals:
                 for d in d_vals:
                     # no drop-out => f = 0
-                    _pars = f"{s}\t{N}\t{l}\t{d}\t0.00\t0"
+                    _pars = f"{s}  {N}  {l}  {d}  0.00  0"
                     file.write(_pars+"\n")
                     if run:
                         os.system("python failures_LR.py "+_pars)
                     for p in p_vals:
                         # layers to apply failure
-                        # f_vals = ["".join([str(j+1) for j in range(i+1)]) for i in range(l)]
-                        f_vals = ["".join([str(i+1) for i in range(l)])]
+                        # f_vals = [",".join([str(j+1) for j in range(i+1)]) for i in range(l)]
+                        f_vals = ["all"] # f_vals = [",".join([str(i+1) for i in range(l)])]
                         for f in f_vals:
                         # if dropout, chose option for layers
-                            _pars = f"{s}\t{N}\t{l}\t{d}\t{p:.2f}\t{f}"
+                            _pars = f"{s}  {N}  {l}  {d}  {p:.2f}  {f}"
                             file.write(_pars+"\n")
                             if run:
                                 os.system("python failures_LR.py "+_pars)

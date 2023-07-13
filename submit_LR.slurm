@@ -1,8 +1,10 @@
 #!/bin/bash
 
+# #SBATCH --partition=cpu
+# #SBATCH -n 1
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
-#SBATCH --array=1-8
+#SBATCH --array=1-32
 #SBATCH --job-name=LR
 #SBATCH --mem=16G
 #SBATCH --time=5-00:00:00
