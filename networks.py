@@ -177,6 +177,9 @@ class DeepNet(Net):
 
         self.init_weights (scaling)
 
+    def __len__ (self):
+        return len(self.layers)
+
     def forward(self, x, hidden_layer=False):
         # ModuleList can act as an iterable, or be indexed using ints
         h = []
