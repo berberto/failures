@@ -136,6 +136,61 @@ class LinearNet3L(Net):
         else:
             return out
 
+class DeepNet(Net):
+    '''
+    General deep feed forward class
+    Optional arguments
+    - `layer_type` specifies a particular type of layer (e.g. Dropout, DropConnect, etc)
+    for layers in `drop_l`.
+    - `drop_l` is a string containing comma-separated numbers of all the layers where
+    `layer_type` has to be used.
+    '''
+    def __init__(self, d_input, d_output=1, d_hidden=[100],
+                    activation=None,
+                    layer_type=nn.Linear, drop_l=None,
+                    scaling="sqrt",
+                    bias=False):
+        super(DeepNet, self).__init__()
+
+        if activation in [None, 'linear']:
+            self.phi = lambda x: x
+        elif activation == 'relu':
+            self.phi = lambda x: F.relu(x)
+        elif activation == 'sigmoid':
+            self.phi = lambda x: F.sigmoid(x)
+        
+        self.d_output = d_output
+        self.n_layers = len(d_hidden) + 1
+        self.layer_dims = [d_input] + d_hidden + [d_output]
+
+        # convert drop_l into a list of strings
+        if drop_l == None:
+            drop_l = ""
+        elif drop_l == "all":
+            drop_l = ",".join([str(i+1) for i in range(self.n_layers)])
+        drop_l = drop_l.split(",")
+
+        self.layers = nn.ModuleList([layer_type(self.layer_dims[l], self.layer_dims[l+1], bias=bias) if str(l+1) in drop_l \
+                                        else nn.Linear(self.layer_dims[l], self.layer_dims[l+1], bias=bias) \
+                                        for l in range(self.n_layers)
+                                    ])
+
+        self.init_weights (scaling)
+
+    def forward(self, x, hidden_layer=False):
+        # ModuleList can act as an iterable, or be indexed using ints
+        h = []
+        for l, layer in enumerate(self.layers):
+            x = self.phi(layer(x))
+            if hidden_layer and l < self.n_layers - 1:
+                h.append(x)
+
+        if hidden_layer:
+            return x, h
+        else:
+            return x
+
+
 class ClassifierNet2L (LinearNet2L):
     '''
     Feed forward neural network with 2 fully connected hidden layers,
@@ -150,6 +205,24 @@ class ClassifierNet2L (LinearNet2L):
         out = self.fc2(h1)
         if hidden_layer:
             return out, [h1]
+        else:
+            return out
+
+class ClassifierNet3L (LinearNet3L):
+    '''
+    Feed forward neural network with 3 fully connected hidden layers,
+    relu non-linearity and softmax output for classification tasks.
+    Adds the ReLU non-linearity to the layers specified as in the 
+    LinearNet3L base class.
+    '''
+    def forward (self, x, hidden_layer=False):
+        x = torch.flatten(x, start_dim=1)
+        h1 = F.relu(self.fc1(x))
+        h2 = F.relu(self.fc2(h1))
+        # out = F.softmax(self.fc3(h2), dim=1)
+        out = self.fc3(h2)
+        if hidden_layer:
+            return out, [h1,h2]
         else:
             return out
 
