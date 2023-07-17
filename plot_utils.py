@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-
+plt.rcParams['font.size'] = 10
 
 def plot_alignment_layers (projs, d_output=10, epochs=None, out_dir='.', title=''):
 
@@ -13,20 +13,22 @@ def plot_alignment_layers (projs, d_output=10, epochs=None, out_dir='.', title='
 
     # ALIGNMENT
     kwargs=dict(vmin=0, vmax=1, aspect='equal') # cmap="bwr", vmin=-1, 
-    cols=max(n_layers-1, 2)
-    fig, axs = plt.subplots(1, cols, figsize=(cols*4, 4))
-    # plt.subplots_adjust(wspace=0.4)
-    plt.subplots_adjust(hspace=0.3)
+    cols=len(projs)
+    fig, axs = plt.subplots(1, cols, figsize=(cols*3, 2))
+    if cols == 1:
+        axs = [axs]
+    plt.subplots_adjust(wspace=0.4)
+    plt.subplots_adjust(hspace=0.5)
     def plot_frame (frame):
         plt.cla()
-        fig.suptitle(title+f" -- epoch {frame*n_skip}")
+        # fig.suptitle(title+f" -- epoch {frame*n_skip}")
         # plot alignment of intermediate layers
         for l, proj in enumerate(projs):
             ax = axs[l]
             ax.set_xlabel(r"$m$")
             ax.set_ylabel(r"$n$")
             ax.set_title(rf"$|V^n_{l+2}\cdot U^m_{l+1}$|")
-            im = ax.imshow(np.abs(proj[frame, :d_output+2, :d_output+2]), **kwargs)#; plt.colorbar(im, ax=ax)
+            im = ax.imshow(np.abs(proj[frame, :d_output+4, :d_output+4]), **kwargs)#; plt.colorbar(im, ax=ax)
 
     plot_frame(len(projs[0])-1)
     fig.savefig(f'{out_dir}/plot_alignment_layers_final.png', bbox_inches="tight")
@@ -42,22 +44,22 @@ def plot_alignment_layers (projs, d_output=10, epochs=None, out_dir='.', title='
     ani.save(f'{out_dir}/plot_alignment_layers.gif')
 
     cols=n_layers-1
-    fig, axs = plt.subplots(1, cols, figsize=(cols*4, 4))
+    fig, axs = plt.subplots(1, cols, figsize=(cols*3, 2))
     if cols == 1:
         axs = [axs]
-    # plt.subplots_adjust(wspace=0.4)
-    plt.subplots_adjust(hspace=0.3)
-    fig.suptitle(title)
+    plt.subplots_adjust(wspace=0.4)
+    plt.subplots_adjust(hspace=0.5)
+    # fig.suptitle(title)
     for l, proj in enumerate(projs):
         ax = axs[l]
         ax.set_ylim([0,1.1])
         ax.set_xlabel("epoch")
         ax.set_ylabel(rf"$|V^n_{l+2}\cdot U^m_{l+1}|$")
-        _,n,m = proj.shape
-        n = min(n,d_output+2)
-        m = min(m,d_output+2)
-        for i in range(n,m):
-            for j in range(n,m):
+        _,_n,_m = proj.shape
+        n = min(_n,d_output+2)
+        m = min(_m,d_output+2)
+        for i in range(n):
+            for j in range(m):
                 c = "C0" if i == j else "C1"
                 ax.plot(epochs, np.abs(proj[:, i, j]), c=c)
     fig.savefig(f'{out_dir}/plot_alignment_layers_epochs.png', bbox_inches="tight")
@@ -78,8 +80,8 @@ def plot_alignment_wstar (model_weights, w_star, Us,Vs, epochs=None, out_dir='.'
     ]
 
     # BIMODALITY
-    fig, ax = plt.subplots(figsize=(6, 4))
-    ax.set_title(title)
+    fig, ax = plt.subplots(figsize=(3, 2))
+    # ax.set_title(title)
     ax.set_xlabel(r'$W^{(L)}_j$')
     ax.set_ylabel(r'$(W^{(1)}\cdot w^*)_j$')
     W1_dot_wstar = np.dot(np.atleast_2d(w_star), model_weights[0][-1].T)
@@ -90,8 +92,9 @@ def plot_alignment_wstar (model_weights, w_star, Us,Vs, epochs=None, out_dir='.'
 
     # COS OF ANGLE BETWEEN PRINCIPAL COMPOMENTS AND WEIGHTS
     # (check low rank of W)
-    fig, axs = plt.subplots(1,2,figsize=(12, 4))
-    fig.suptitle(title)
+    fig, axs = plt.subplots(1,2,figsize=(6, 2))
+    plt.subplots_adjust(wspace=0.4)
+    # fig.suptitle(title)
     for ax in axs.ravel():
         ax.set_xlabel('epoch')
         ax.set_ylim([0,1.1])
@@ -118,8 +121,8 @@ def plot_singular_values (Ss, epochs=None, out_dir='.', title=''):
         epochs = np.arange(n_snapshots)
 
     # PARTICIPATION RATIO AND LARGEST SINGULAR VALUE
-    fig, ax = plt.subplots(figsize=(6, 4))
-    ax.set_title(title)
+    fig, ax = plt.subplots(figsize=(3, 2))
+    # ax.set_title(title)
     ax.set_xlabel('epoch')
     ax.set_ylabel('participation ratio / rank')
     ax.grid()
@@ -132,8 +135,9 @@ def plot_singular_values (Ss, epochs=None, out_dir='.', title=''):
 
     # ALL SINGULAR VALUES
     cols=n_layers
-    fig, axs = plt.subplots(1, cols, figsize=(cols*4, 4))
-    fig.suptitle(title)
+    fig, axs = plt.subplots(1, cols, figsize=(cols*3, 2))
+    plt.subplots_adjust(wspace=0.4)
+    # fig.suptitle(title)
     for l, S in enumerate(Ss):
         ax = axs[l]
         ax.set_title(rf"$W_{l+1}$")
@@ -146,10 +150,11 @@ def plot_singular_values (Ss, epochs=None, out_dir='.', title=''):
 
     # SINGULAR VALUES DISTRIBUTION
     cols=n_layers-1
-    fig, axs = plt.subplots(1, cols, figsize=(cols*4, 4))
+    fig, axs = plt.subplots(1, cols, figsize=(cols*3, 2))
+    plt.subplots_adjust(wspace=0.4)
     if cols == 1:
         axs = [axs]
-    fig.suptitle(title)
+    # fig.suptitle(title)
     for l, S in enumerate(Ss[:-1]):
         ax = axs[l]
         ax.set_title(rf"$W_{l+1}$")
@@ -169,12 +174,12 @@ def plot_loss_accuracy (train_loss, test_loss, train_acc=None, test_acc=None, ep
         epochs = np.arange(n_snapshots)
 
     # TRAIN AND TEST LOSS
-    fig, ax = plt.subplots(figsize=(6, 4))
+    fig, ax = plt.subplots(figsize=(3, 2))
     # ax.scatter(np.arange(len(test_loss)), test_loss, label="test", s=2, c="C1")
     # ax.plot(train_loss, label="train", c="C0")
     ax.scatter(epochs, test_loss, label="test", s=2, c="C1")
     ax.plot(epochs, train_loss, label="train", c="C0")
-    ax.set_title(title)
+    # ax.set_title(title)
     ax.grid()
     # ax.set_xscale("log")
     ax.set_yscale("log")
@@ -186,12 +191,12 @@ def plot_loss_accuracy (train_loss, test_loss, train_acc=None, test_acc=None, ep
 
     if (train_acc is not None) and (test_acc is not None):
         # TRAIN AND TEST ACCURACY
-        fig, ax = plt.subplots(figsize=(6, 4))
+        fig, ax = plt.subplots(figsize=(3, 2))
         # ax.scatter(np.arange(len(test_acc)), test_acc, label="test", s=2, c="C1")
         # ax.plot(train_acc, label="train", c="C0")
         ax.scatter(epochs, test_acc, label="test", s=2, c="C1")
         ax.plot(epochs, train_acc, label="train", c="C0")
-        ax.set_title(title)
+        # ax.set_title(title)
         ax.grid()
         ax.set_ylabel('Train and test accuracy')
         ax.set_xlabel('epoch')
@@ -208,8 +213,8 @@ def plot_weights (model_weights, weights_norm, epochs=None, out_dir='.', title='
         epochs = np.arange(n_snapshots)
 
     # NORM OF THE WEIGHTS
-    fig, ax = plt.subplots(figsize=(6, 4))
-    ax.set_title(title)
+    fig, ax = plt.subplots(figsize=(3, 2))
+    # ax.set_title(title)
     ax.set_ylabel('L2 weight norm')
     ax.grid()
     ax.set_xscale('log')
@@ -224,8 +229,8 @@ def plot_weights (model_weights, weights_norm, epochs=None, out_dir='.', title='
     plt.close(fig)
 
     # HISTOGRAM OF THE WEIGHTS
-    fig, ax = plt.subplots(figsize=(6, 4))
-    ax.set_title(title)
+    fig, ax = plt.subplots(figsize=(3, 2))
+    # ax.set_title(title)
     ax.set_xlabel('L2 weight norm (trained)')
     ax.set_ylabel('density')
     N = np.max([m.shape[1] for m in model_weights])
@@ -245,8 +250,8 @@ def plot_hidden_units (hidden, epochs=None, out_dir='.', title=''):
         epochs = np.arange(n_snapshots)
 
     # VARIANCE OF THE HIDDEN LAYER
-    fig, ax = plt.subplots(figsize=(6, 4))
-    ax.set_title(title)
+    fig, ax = plt.subplots(figsize=(3, 2))
+    # ax.set_title(title)
     ax.set_ylabel('Hidden layer norm')
     ax.set_xlabel('epoch')
     ax.grid()
@@ -257,8 +262,8 @@ def plot_hidden_units (hidden, epochs=None, out_dir='.', title=''):
     plt.close(fig)
 
     # HISTOGRAM OF THE HIDDEN LAYER(S)
-    fig, ax = plt.subplots(figsize=(6, 4))
-    ax.set_title(title)
+    fig, ax = plt.subplots(figsize=(3, 2))
+    # ax.set_title(title)
     ax.set_xlabel('Hidden layer activity')
     ax.set_ylabel('density')
     for i, h in enumerate(hidden):
@@ -270,8 +275,9 @@ def plot_hidden_units (hidden, epochs=None, out_dir='.', title=''):
 
 def plot_covariance (cov, d_output=1, out_dir='.', title=''):
 
-    fig, axs = plt.subplots(1, 2, figsize=(12, 4))
-    fig.suptitle(title)
+    fig, axs = plt.subplots(1, 2, figsize=(9, 3))
+    plt.subplots_adjust(wspace=0.4)
+    # fig.suptitle(title)
     ax = axs[0]
     ax.set_title("Covariance matrix")
     ax.set_xlabel('i')
