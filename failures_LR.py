@@ -93,6 +93,10 @@ if __name__ == "__main__":
 
         print("\nTRAINING ...")
 
+        '''
+        Generate dataset
+        '''
+        # Define target linear transformation
         np.random.seed(1871)
         if d_output == 1:
             w_star = np.ones(N)
@@ -110,16 +114,23 @@ if __name__ == "__main__":
             
         np.save(f"{out_dir}/w_star.npy", w_star)
 
+        # define torch dataset and dataloader
         train_dataset = LinearRegressionDataset(w_star, n_train)
         test_dataset = LinearRegressionDataset(w_star, n_test)
 
         train_loader = torch.utils.data.DataLoader(train_dataset,**train_kwargs)
         test_loader = torch.utils.data.DataLoader(test_dataset,**test_kwargs)
 
+        # calculate and save data covariances
         train_data = torch.flatten(train_dataset.data, start_dim=1).numpy()
         covariance_XX = np.cov(train_data.T)
         np.save( f"{out_dir}/covariance_XX.npy", covariance_XX )
 
+
+        '''
+        train network
+        '''
+        # define network model
         model = DeepNet(N, d_output=d_output, d_hidden=(n_layers - 1)*[N],
                     layer_type=functools.partial(LinearWeightDropout, drop_p=drop_p), 
                     bias=False, scaling=scaling, drop_l=drop_l).to(device)
