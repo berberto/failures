@@ -147,6 +147,7 @@ class DeepNet(Net):
     '''
     def __init__(self, d_input, d_output=1, d_hidden=[100],
                     activation=None,
+                    output_activation = None,
                     layer_type=nn.Linear, drop_l=None,
                     scaling="sqrt",
                     bias=False):
@@ -158,6 +159,17 @@ class DeepNet(Net):
             self.phi = lambda x: F.relu(x)
         elif activation == 'sigmoid':
             self.phi = lambda x: F.sigmoid(x)
+        else:
+            raise NotImplementedError("activation function " + \
+                            f"\"{activation}\" not implemented")
+
+        if output_activation in [None, 'linear']:
+            self.out_phi = lambda x: x
+        elif output_activation == 'softmax':
+            self.out_phi = lambda x: F.softmax(x, dim=-1)
+        else:
+            raise NotImplementedError("output activation function " + \
+                            f"\"{output_activation}\" not implemented")
         
         self.d_output = d_output
         self.n_layers = len(d_hidden) + 1
@@ -187,6 +199,7 @@ class DeepNet(Net):
             x = self.phi(layer(x))
             if hidden_layer and l < self.n_layers - 1:
                 h.append(x)
+        x = self.out_phi(x)
 
         if hidden_layer:
             return x, h
