@@ -7,12 +7,11 @@ from torchvision import datasets, transforms
 import functools
 import sys
 import os
+from os.path import join
 import numpy as np
 import pickle
 
-from networks import LinearWeightDropout
-from networks import LinearNet2L, LinearNet3L
-from networks import ClassifierNet2L, ClassifierNet3L
+from networks import LinearWeightDropout, DeepNet
 from training_utils import train_classifier as train
 from training_utils import test_classifier as test
 from training_utils import append
@@ -24,45 +23,43 @@ from plot_utils import (plot_alignment_layers, plot_singular_values,
 
 if __name__ == "__main__":
 
-    training = False
-    analysis = False
+    training = True
+    analysis = True
     plotting = True
 
     # ==================================================
     #   SETUP PARAMETERS
 
     # get parameters as inputs
-    activation = sys.argv[1]    # hidden layer activation function
-    scaling = sys.argv[2]       # init pars scaling ("lin"=1/N or "sqrt"=1/sqrt(N))
-    N = int(sys.argv[3])        # number of units per hidden layer
-    n_layers = int(sys.argv[4]) # number of layers (hidden + 1)
-    d_output = 10 # 10 digits in MNIST
-    drop_p = float(sys.argv[5]) # probability of weight drop
+    dataset_name = sys.argv[1]
+    if dataset_name == "MNIST":
+        dataset = datasets.MNIST
+    elif dataset_name == "CIFAR10":
+        dataset = datasets.CIFAR10
+    else:
+        raise NotImplementedError(f"dataset \"{dataset_name}\" not implemented")
+    activation = sys.argv[2]    # hidden layer activation function
+    scaling = sys.argv[3]       # init pars scaling ("lin"=1/N or "sqrt"=1/sqrt(N))
+    N = int(sys.argv[4])        # number of hidden units
+    n_layers = int(sys.argv[5]) # number of layers (hidden + 1)
+    drop_p = float(sys.argv[6]) # probability of weight drop
     if not drop_p:
         drop_l = None
     else:
-        drop_l = sys.argv[6]        # layer(s) with dropout, combined in a string ("1", "12", "13" etc)
-
-    assert n_layers in [2,3], f"Invalid number of layers, {n_layers}"
-    assert activation in ["linear", "relu"], f"Invalid activation function, '{activation}'"
-
-    if n_layers == 2:
-        if activation == "relu":
-            Net = ClassifierNet2L
-        if activation == "linear":
-            Net = LinearNet2L
-    elif n_layers == 3:
-        if activation == "relu":
-            Net = ClassifierNet3L
-        if activation == "linear":
-            Net = LinearNet3L
+        drop_l = sys.argv[7]    # layer(s) with dropout, combined in a string ("1", "12", "13" etc)
 
     # set (and create) output directory
-    out_dir = f"outputs_MNIST/{n_layers}L_{activation}/"
-    out_dir += f"{scaling}/"
-    out_dir += f"N_{N:04d}/"
-    out_dir += f"{drop_l}/"
-    out_dir += f"q_{drop_p:.2f}"    
+    out_dir = join(f"outputs_{dataset_name}", f"{n_layers}L_{activation}")
+    out_dir = join(out_dir, scaling, f"{drop_l}", f"q_{drop_p:.2f}")
+    
+    wd = 0.
+    if drop_p == 0.:
+        try:
+            wd = float(sys.argv[8])
+        except:
+            pass
+        out_dir = join(out_dir, f"wd_{wd:.5f}")
+
     os.makedirs(out_dir, exist_ok=True)
 
     print(f"Output directory:\n\t{out_dir}\n")
@@ -74,7 +71,7 @@ if __name__ == "__main__":
     # ==================================================
     #   SETUP TRAINING
 
-    n_epochs = 10000
+    n_epochs = 100000
     n_skip = 100  # epochs to skip when saving data
 
     lr = 1e-4
@@ -101,19 +98,24 @@ if __name__ == "__main__":
                 transforms.ToTensor(),
                 transforms.Lambda(lambda x: torch.flatten(x))
                 ])
-        train_dataset = datasets.MNIST('data', train=True, #download=True,
+        train_dataset = dataset('data', train=True, # download=True,
                             transform=transform)
-        test_dataset = datasets.MNIST('data', train=False,
+        test_dataset = dataset('data', train=False,
                             transform=transform)
+        d_input = np.prod(train_dataset.data.shape[1:])
+        d_output = max(train_dataset.targets) + 1
+
         train_loader = torch.utils.data.DataLoader(train_dataset,**train_kwargs)
         test_loader = torch.utils.data.DataLoader(test_dataset, **test_kwargs)
 
-        train_data = torch.flatten(train_dataset.data, start_dim=1).numpy()
+        train_data = torch.flatten(torch.tensor(train_dataset.data), start_dim=1).numpy()
         covariance_XX = np.cov(train_data.T)
         np.save( f"{out_dir}/covariance_XX.npy", covariance_XX )
 
-        model = Net(d_input=28*28, d_output=10, d_hidden=N, 
-                    layer_type=functools.partial(LinearWeightDropout, drop_p=drop_p), 
+        model = DeepNet(d_input=d_input, d_output=d_output,
+                    d_hidden=(n_layers - 1)*[N],
+                    layer_type=functools.partial(LinearWeightDropout, drop_p=drop_p),
+                    activation=activation, output_activation='linear',
                     bias=False, scaling=scaling, drop_l=drop_l).to(device)
         optimizer = optim.SGD(model.parameters(), lr=lr, weight_decay=wd)
 
