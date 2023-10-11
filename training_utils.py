@@ -27,7 +27,7 @@ def train_regressor (model, device, train_loader, optimizer, epoch, log_interval
             optimizer.step()
         if verbose:
             if batch_idx % log_interval == 0:
-                print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6e}'.format(
                     epoch, batch_idx * len(X), len(train_loader.dataset),
                     100. * batch_idx / len(train_loader), loss.item()))
         train_loss += loss.item() / len(train_loader.dataset)
@@ -50,7 +50,7 @@ def test_regressor (model, device, test_loader):
             # mean loss (MSE averaged over data points only)
             test_loss += F.mse_loss(output, y, reduction="sum").item() / len(test_loader.dataset)
 
-    print('Test set: Average loss: {:.4f}'.format(test_loss))
+    print('Test set: Average loss: {:.6e}'.format(test_loss))
     with torch.no_grad():
         model_weights = []
         for name, pars in model.named_parameters():
@@ -77,7 +77,7 @@ def train_classifier (model, device, train_loader, optimizer, epoch, log_interva
             optimizer.step()
         if verbose:
             if batch_idx % log_interval == 0:
-                print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6e}'.format(
                     epoch, batch_idx * len(X), len(train_loader.dataset),
                     100. * batch_idx / len(train_loader), loss.item()))
         train_loss += loss.item() / len(train_loader.dataset)
@@ -108,7 +108,7 @@ def test_classifier (model, device, test_loader, num_classes=10):
             pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
             test_acc += pred.eq(y.view_as(pred)).sum().item() / len(test_loader.dataset)
 
-    print('Test set: Average loss: {:.4f}'.format(test_loss))
+    print('Test set: Average loss: {:.6e}'.format(test_loss))
     with torch.no_grad():
         model_weights = []
         for name, pars in model.named_parameters():
