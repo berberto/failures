@@ -131,13 +131,14 @@ if __name__ == "__main__":
         for epoch in range(n_epochs + 1):
             # train (except on the first epoch)
             train_loss_, train_acc_ = train(model, device, train_loader, optimizer, epoch, log_interval=1000)
+            train_loss.append(train_loss_); train_acc.append(train_acc_)
+
             # test
             test_loss_, test_acc_, model_weights_, hidden_ = test(model, device, test_loader)
-
-            train_loss.append(train_loss_); train_acc.append(train_acc_)
-            test_loss.append(test_loss_); test_acc.append(test_acc_)
             # collect statistics
             if epoch % n_skip == 0:
+                test_loss.append(test_loss_); test_acc.append(test_acc_)
+                
                 model.save(f"{out_dir}/model_trained")
                 
                 saved_epochs.append(epoch)
@@ -187,7 +188,7 @@ if __name__ == "__main__":
 
         plot_singular_values (Ss, epochs=saved_epochs, out_dir=out_dir, title=title)
 
-        plot_loss_accuracy (train_loss, test_loss, train_acc, test_acc, out_dir=out_dir, title=title)
+        plot_loss_accuracy (train_loss, test_loss, train_acc, test_acc, test_epochs=saved_epochs, out_dir=out_dir, title=title)
 
         plot_weights (model_weights, weights_norm, epochs=saved_epochs, out_dir=out_dir, title=title)
 

@@ -167,18 +167,23 @@ def plot_singular_values (Ss, epochs=None, out_dir='.', title=''):
     plt.close(fig)
 
 
-def plot_loss_accuracy (train_loss, test_loss, train_acc=None, test_acc=None, epochs=None, out_dir='.', title=''):
+def plot_loss_accuracy (train_loss, test_loss, train_acc=None, test_acc=None,
+        train_epochs=None, test_epochs=None, out_dir='.', title=''):
 
-    n_snapshots = len(train_loss)
-    if epochs is None:
-        epochs = np.arange(n_snapshots)
+    train_snapshots = len(train_loss)
+    if train_epochs is None:
+        train_epochs = np.arange(train_snapshots)
+
+    test_snapshots = len(test_loss)
+    if test_epochs is None:
+        test_epochs = np.arange(test_snapshots)
 
     # TRAIN AND TEST LOSS
     fig, ax = plt.subplots(figsize=(3, 2))
     # ax.scatter(np.arange(len(test_loss)), test_loss, label="test", s=2, c="C1")
     # ax.plot(train_loss, label="train", c="C0")
-    ax.scatter(epochs, test_loss, label="test", s=2, c="C1")
-    ax.plot(epochs, train_loss, label="train", c="C0")
+    ax.scatter(test_epochs, test_loss, label="test", s=2, c="C1")
+    ax.plot(train_epochs, train_loss, label="train", c="C0")
     # ax.set_title(title)
     ax.grid()
     # ax.set_xscale("log")
@@ -194,8 +199,8 @@ def plot_loss_accuracy (train_loss, test_loss, train_acc=None, test_acc=None, ep
         fig, ax = plt.subplots(figsize=(3, 2))
         # ax.scatter(np.arange(len(test_acc)), test_acc, label="test", s=2, c="C1")
         # ax.plot(train_acc, label="train", c="C0")
-        ax.scatter(epochs, test_acc, label="test", s=2, c="C1")
-        ax.plot(epochs, train_acc, label="train", c="C0")
+        ax.scatter(test_epochs, test_acc, label="test", s=2, c="C1")
+        ax.plot(train_epochs, train_acc, label="train", c="C0")
         # ax.set_title(title)
         ax.grid()
         ax.set_ylabel('Train and test accuracy')
