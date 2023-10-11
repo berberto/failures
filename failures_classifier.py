@@ -71,7 +71,7 @@ if __name__ == "__main__":
     # ==================================================
     #   SETUP TRAINING
 
-    n_epochs = 100000
+    n_epochs = 10000
     n_skip = 100  # epochs to skip when saving data
 
     lr = 1e-4
