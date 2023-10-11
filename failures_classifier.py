@@ -88,22 +88,27 @@ if __name__ == "__main__":
 
 
     # ==================================================
+    #   DATASET
+
+    transform=transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Lambda(lambda x: torch.flatten(x))
+            ])
+    train_dataset = dataset('data', train=True, # download=True,
+                        transform=transform)
+    test_dataset = dataset('data', train=False,
+                        transform=transform)
+    d_input = np.prod(train_dataset.data.shape[1:])  # shape of flattened input
+    d_output = len(np.unique(train_dataset.targets)) # number of classes
+
+
+    # ==================================================
     #   TRAINING/TESTING
 
     if training:
 
         print("\nTRAINING ...")
 
-        transform=transforms.Compose([
-                transforms.ToTensor(),
-                transforms.Lambda(lambda x: torch.flatten(x))
-                ])
-        train_dataset = dataset('data', train=True, # download=True,
-                            transform=transform)
-        test_dataset = dataset('data', train=False,
-                            transform=transform)
-        d_input = np.prod(train_dataset.data.shape[1:])
-        d_output = max(train_dataset.targets) + 1
 
         train_loader = torch.utils.data.DataLoader(train_dataset,**train_kwargs)
         test_loader = torch.utils.data.DataLoader(test_dataset, **test_kwargs)
