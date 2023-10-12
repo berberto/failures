@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+from os.path import join
 plt.rcParams['font.size'] = 10
 
 def plot_alignment_layers (projs, d_output=10, epochs=None, out_dir='.', title=''):
@@ -278,7 +279,14 @@ def plot_hidden_units (hidden, epochs=None, out_dir='.', title=''):
     plt.close(fig)
 
 
-def plot_covariance (cov, d_output=1, out_dir='.', title=''):
+def plot_covariance (cov, d_output=1, IO=False, out_dir='.', title=''):
+
+    cov_XX = cov
+    if IO:
+        d_input = len(cov) - d_output
+        cov_XX = cov[:d_input,:d_input]
+        cov_Xy = cov[:d_input,-d_output:]
+        cov_yy = cov[-d_output:,-d_output:]
 
     fig, axs = plt.subplots(1, 2, figsize=(9, 3))
     plt.subplots_adjust(wspace=0.4)
@@ -287,7 +295,7 @@ def plot_covariance (cov, d_output=1, out_dir='.', title=''):
     ax.set_title("Covariance matrix")
     ax.set_xlabel('i')
     ax.set_ylabel('j')
-    im = ax.imshow(cov)
+    im = ax.imshow(cov_XX)
     fig.colorbar(im, ax=ax)
     
     ax = axs[1]
@@ -296,14 +304,27 @@ def plot_covariance (cov, d_output=1, out_dir='.', title=''):
     ax.set_ylim([1e-5,1])
     ax.set_xlabel(r'mode, $n$')
     ax.set_ylabel(r'$\sqrt{\lambda_n}\,/\,N$')
-    S, _ = np.linalg.eig(cov)
+    S, _ = np.linalg.eig(cov_XX)
     idx_sorted = np.argsort(S)[::-1]
     S_sorted = np.abs(S[idx_sorted]) # to remove small imaginary parts
-    ax.plot(np.sqrt(S_sorted)/len(cov))
+    ax.plot(np.sqrt(S_sorted)/len(cov_XX))
     
     axins = ax.inset_axes([0.15, 0.15, 0.4, 0.4])
     axins.set_ylim([0,1])
-    _n = 20 # min(d_output + 2, len(cov))
-    axins.plot( np.sqrt(S_sorted[:_n]) / len(cov) )
-    fig.savefig(f'{out_dir}/plot_input_covariance.png', bbox_inches="tight")
+    _n = 20 # min(d_output + 2, len(cov_XX))
+    axins.plot( np.sqrt(S_sorted[:_n]) / len(cov_XX) )
+    fig.savefig(join(out_dir, 'plot_input_covariance.png'), bbox_inches="tight")
     plt.close(fig)
+
+
+    if IO:
+
+        U, S, Vh = np.linalg.svd(cov_Xy)
+        fig, ax = plt.subplots(1,4,figsize=(10,3))
+        kwargs = dict(vmin=-1, vmax=1, cmap="bwr", aspect="equal")
+        im = ax[0].imshow(cov_Xy, **kwargs); ax[0].set_title(r"$\Sigma^{xy}$")
+        ax[1].imshow(-U[:,:d_output], **kwargs); ax[1].set_title(r"$U$")
+        ax[2].imshow(np.diag(S), **kwargs); ax[2].set_title(r"$S$")
+        ax[3].imshow(-Vh, **kwargs); ax[3].set_title(r"$V^T$")
+        fig.colorbar(im, ax=ax.ravel().tolist())
+        fig.savefig(join(out_dir, 'plot_input-output_covariance.png'), bbox_inches="tight")
