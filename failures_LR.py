@@ -16,7 +16,7 @@ from networks import LinearWeightDropout, DeepNet
 from training_utils import train_regressor as train
 from training_utils import test_regressor as test
 from training_utils import append
-from data import LinearRegressionDataset
+from data import LinearRegressionDataset, SemanticsDataset
 
 from stats_utils import run_statistics, load_statistics
 from plot_utils import (plot_alignment_layers, plot_alignment_wstar,
@@ -47,7 +47,9 @@ if __name__ == "__main__":
 
     # set (and create) output directory
     out_dir = join("outputs_LR", f"{n_layers}L_{d_output}d", scaling)
+    # out_dir = join("outputs_AS", f"{n_layers}L", scaling)
     out_dir = join(out_dir, f"N_{N:04d}", f"{drop_l}", f"q_{drop_p:.2f}")
+    out_dir = join(out_dir, "longrun")
 
     wd = 0.
     if drop_p == 0.:
@@ -68,11 +70,11 @@ if __name__ == "__main__":
     # ==================================================
     #   SETUP TRAINING
 
-    n_epochs = 1000000
-    n_skip = 100 # epochs to skip when saving data
+    n_epochs = 500000
+    n_skip = 500 # epochs to skip when saving data
 
-    n_train = 100000
-    n_test = 1000
+    n_train = 10000
+    n_test = 10000
 
     lr = 1e-5
 
@@ -89,23 +91,26 @@ if __name__ == "__main__":
     #   DATASET
 
     np.random.seed(1871)
-    if d_output == 1:
-        w_star = np.ones(N)
-        # w_star = np.random.randn(N)
-        w_star /= np.linalg.norm(w_star)
-    elif d_output == 2:
-        u_1 = np.array([1,1])/np.sqrt(2)
-        u_2 = np.array([-1,1])/np.sqrt(2)
-        v_1 = np.ones(N)/np.sqrt(N)
-        v_2 = np.zeros(N); v_2[0] = 1; v_2[2] = -1; v_2 /= np.sqrt(2)
-        w_star = 1. * u_1[:,None]*v_1[None,:] \
-               + .2 * u_2[:,None]*v_2[None,:]
-    else:
-        raise ValueError("invalid value of 'd_output'")
+    # if d_output == 1:
+    #     w_star = np.ones(N)
+    #     # w_star = np.random.randn(N)
+    #     w_star /= np.linalg.norm(w_star)
+    # elif d_output == 2:
+    #     u_1 = np.array([1,1])/np.sqrt(2)
+    #     u_2 = np.array([-1,1])/np.sqrt(2)
+    #     v_1 = np.ones(N)/np.sqrt(N)
+    #     v_2 = np.zeros(N); v_2[0] = 1; v_2[2] = -1; v_2 /= np.sqrt(2)
+    #     w_star = 1. * u_1[:,None]*v_1[None,:] \
+    #            + .2 * u_2[:,None]*v_2[None,:]
+    # else:
+    #     raise ValueError("invalid value of 'd_output'")
 
-    # define torch dataset and dataloader
-    train_dataset = LinearRegressionDataset(w_star, n_train)
-    test_dataset = LinearRegressionDataset(w_star, n_test)
+    # # define torch dataset and dataloader
+    # train_dataset = LinearRegressionDataset(w_star, n_train)
+    # test_dataset = LinearRegressionDataset(w_star, n_test)
+
+    train_dataset = SemanticsDataset(n_train)
+    test_dataset = SemanticsDataset(n_test)
 
     w_star = train_dataset.w
     np.save(f"{out_dir}/w_star.npy", w_star)
@@ -124,8 +129,15 @@ if __name__ == "__main__":
 
         # calculate and save data covariances
         train_data = torch.flatten(train_dataset.data, start_dim=1).numpy()
-        covariance_XX = np.cov(train_data.T)
-        np.save( f"{out_dir}/covariance_XX.npy", covariance_XX )
+        covariance = np.cov(train_data.T, train_dataset.targets.T)
+        cov_XX = covariance[:d_input,:d_input]
+        cov_Xy = covariance[:d_input,-d_output:]
+        cov_yy = covariance[-d_output:,-d_output:]
+
+        np.save( f"{out_dir}/covariance.npy", covariance )
+        np.save( f"{out_dir}/covariance_XX.npy", cov_XX )
+        np.save( f"{out_dir}/covariance_Xy.npy", cov_Xy )
+        np.save( f"{out_dir}/covariance_yy.npy", cov_yy )
 
 
         '''
@@ -195,13 +207,16 @@ if __name__ == "__main__":
         hidden = [np.load( f"{out_dir}/hidden_{l+1}.npy" ) for l in range(n_layers - 1)]
         model_weights = [np.load( f"{out_dir}/weights_{l+1}.npy" ) for l in range(n_layers)]
         w_star = np.load(f"{out_dir}/w_star.npy")
-        covariance_XX = np.load( f"{out_dir}/covariance_XX.npy" )
+        covariance = np.load( f"{out_dir}/covariance.npy" )
+        cov_XX = np.load( f"{out_dir}/covariance_XX.npy" )
+        cov_Xy = np.load( f"{out_dir}/covariance_Xy.npy" )
+        cov_yy = np.load( f"{out_dir}/covariance_yy.npy" )
 
         weights_norm, (Us, Ss, Vs), projs = load_statistics(out_dir)
 
         title = f"init {'1/N' if scaling == 'lin' else '1/sqrt(N)'}; L={n_layers}; N={N:04d}; drop {drop_l} wp {drop_p:.2f}"
 
-        plot_covariance (covariance_XX, d_output=d_output, out_dir=out_dir, title=title)
+        plot_covariance (covariance, IO=True, d_output=d_output, out_dir=out_dir, title=title)
         
         plot_alignment_layers (projs, d_output=d_output, epochs=saved_epochs, out_dir=out_dir, title=title)
 
