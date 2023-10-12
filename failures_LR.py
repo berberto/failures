@@ -131,7 +131,7 @@ if __name__ == "__main__":
         train network
         '''
         # define network model
-        model = DeepNet(N, d_output=d_output, d_hidden=(n_layers - 1)*[N],
+        model = DeepNet(d_input=d_input, d_output=d_output, d_hidden=(n_layers - 1)*[N],
                     layer_type=functools.partial(LinearWeightDropout, drop_p=drop_p), 
                     bias=False, scaling=scaling, drop_l=drop_l).to(device)
 
