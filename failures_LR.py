@@ -208,7 +208,12 @@ if __name__ == "__main__":
 
         plot_singular_values (Ss, epochs=saved_epochs, out_dir=out_dir, title=title)
 
-        plot_loss_accuracy (train_loss, test_loss, out_dir=out_dir, title=title)
+        try:
+            # new version where testing is done only every `n_skip` epochs
+            # -- throws an exception if testing done every epoch
+            plot_loss_accuracy (train_loss, test_loss, test_epochs=saved_epochs, out_dir=out_dir, title=title)
+        except:
+            plot_loss_accuracy (train_loss, test_loss, out_dir=out_dir, title=title)
 
         plot_weights (model_weights, weights_norm, epochs=saved_epochs, out_dir=out_dir, title=title)
 
