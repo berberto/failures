@@ -82,5 +82,38 @@ class SemanticsDataset (torch.utils.data.Dataset):
 
 
 if __name__ == "__main__":
-    data = LinearRegressionDataset(np.ones(100), 10000)
+    # train_dataset = LinearRegressionDataset(np.ones(100), 10000)
+    train_dataset = SemanticsDataset(10000)
 
+    import matplotlib.pyplot as plt
+
+    X_train = train_dataset.data
+    y_train = train_dataset.targets
+    d_input = X_train.shape[1]
+    d_output = y_train.shape[1]
+
+    cov = np.cov(X_train.T, y_train.T)
+    cov_XX = cov[:d_input,:d_input]
+    cov_Xy = cov[:d_input,-d_output:]
+    cov_yy = cov[-d_output:,-d_output:]
+
+    fig, ax = plt.subplots(1,3)
+    kwargs = dict(vmin=-1, vmax=1, cmap="bwr", aspect="equal")
+    im = ax[0].imshow(cov_XX, **kwargs); ax[0].set_title("Input-input cov")
+    ax[1].imshow(cov_Xy, **kwargs); ax[1].set_title("Input-output cov")
+    ax[2].imshow(cov_yy, **kwargs); ax[2].set_title("Output-output cov")
+    fig.colorbar(im, ax=ax.ravel().tolist())
+    fig.savefig("AS_cov.png")
+
+    U, S, Vh = np.linalg.svd(train_dataset.w.T)
+
+    fig, ax = plt.subplots(1,4,figsize=(10,3))
+    kwargs = dict(vmin=-1, vmax=1, cmap="bwr", aspect="equal")
+    im = ax[0].imshow(train_dataset.w.T, **kwargs); ax[0].set_title(r"$\Sigma^{xy}$")
+    ax[1].imshow(-U[:,:d_output], **kwargs); ax[1].set_title(r"$U$")
+    ax[2].imshow(np.diag(S), aspect="equal"); ax[2].set_title(r"$S$")
+    for i,s in enumerate(S):
+        ax[2].text(i,i,f"{s:.2f}", c='r',verticalalignment="center",horizontalalignment="center")
+    ax[3].imshow(-Vh, **kwargs); ax[3].set_title(r"$V^T$")
+    fig.colorbar(im, ax=ax.ravel().tolist())
+    fig.savefig("AS_svd.png")
