@@ -35,7 +35,7 @@ if __name__ == "__main__":
     #   SETUP PARAMETERS
 
     # get parameters as inputs
-    scaling = sys.argv[1]       # init pars scaling ("lin"=1/N or "sqrt"=1/sqrt(N))
+    scaling = sys.argv[1]       # init pars scaling ("lin"=1/N, "sqrt"=1/sqrt(N), or "const"=0.001)
     N = int(sys.argv[2])        # number of input and hidden units
     n_layers = int(sys.argv[3]) # number of layers (hidden + 1)
     d_output = int(sys.argv[4]) # output dimension
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     if not drop_p:
         drop_l = None
     else:
-        drop_l = sys.argv[6]        # layer(s) with dropout, combined in a string ("1", "12", "13" etc)
+        drop_l = sys.argv[6]    # layer(s) with dropout, comma separated ("1", "1,2", "1,3" etc)
 
     # set (and create) output directory
     out_dir = join("outputs_LR", f"{n_layers}L_{d_output}d", scaling)
