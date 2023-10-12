@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# #SBATCH --partition=cpu
-# #SBATCH -n 1
+# SBATCH --partition=cpu
+# SBATCH -n 1
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
-#SBATCH --array=1-32
-#SBATCH --job-name=LR
-#SBATCH --mem=16G
 #SBATCH --time=5-00:00:00
+#SBATCH --array=1-16
+#SBATCH --job-name=LRsem
+#SBATCH --mem=16G
 
 module load cuda/11.6
 

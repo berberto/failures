@@ -8,13 +8,13 @@ parser.add_argument('--run', dest='run', action='store_true', default=False, hel
 args = parser.parse_args()
 run = args.run
 
-s_vals = ["sqrt", "lin"] # initial parameters scaling
+s_vals = ["const", "sqrt"] # ["sqrt", "lin"] # initial parameters scaling
 
-N_vals = [100] # number of units per hidden layer
+N_vals = [16, 32] # number of units per hidden layer
 
-l_vals = [2,3,5,10] # number of layers
+l_vals = [2, 3] # [2,3,5,10] # number of layers
 
-d_vals = [1,2] # output dimension
+d_vals = [4] # [1,2] # output dimension
 
 p_vals = [0.5] # weight failure probability
 
