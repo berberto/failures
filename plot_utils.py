@@ -32,7 +32,7 @@ def plot_alignment_layers (projs, d_output=10, epochs=None, out_dir='.', title='
             im = ax.imshow(np.abs(proj[frame, :d_output+4, :d_output+4]), **kwargs)#; plt.colorbar(im, ax=ax)
 
     plot_frame(len(projs[0])-1)
-    fig.savefig(f'{out_dir}/plot_alignment_layers_final.png', bbox_inches="tight")
+    fig.savefig(join(out_dir, 'plot_alignment_layers_final.png'), bbox_inches="tight")
 
     duration = 10 # in s
     n_frames = 50
@@ -63,7 +63,7 @@ def plot_alignment_layers (projs, d_output=10, epochs=None, out_dir='.', title='
             for j in range(m):
                 c = "C0" if i == j else "C1"
                 ax.plot(epochs, np.abs(proj[:, i, j]), c=c)
-    fig.savefig(f'{out_dir}/plot_alignment_layers_epochs.png', bbox_inches="tight")
+    fig.savefig(join(out_dir, 'plot_alignment_layers_epochs.png'), bbox_inches="tight")
 
 
 def plot_alignment_wstar (model_weights, w_star, Us,Vs, epochs=None, out_dir='.', title=''):
@@ -88,7 +88,7 @@ def plot_alignment_wstar (model_weights, w_star, Us,Vs, epochs=None, out_dir='.'
     W1_dot_wstar = np.dot(np.atleast_2d(w_star), model_weights[0][-1].T)
     for i in range(d_output):
         ax.scatter(model_weights[-1][-1,i], W1_dot_wstar[i], alpha=0.5, s=.1)
-    fig.savefig(f'{out_dir}/plot_scatter_W.png', bbox_inches="tight")
+    fig.savefig(join(out_dir, 'plot_scatter_W.png'), bbox_inches="tight")
     plt.close(fig)
 
     # COS OF ANGLE BETWEEN PRINCIPAL COMPOMENTS AND WEIGHTS
@@ -110,7 +110,7 @@ def plot_alignment_wstar (model_weights, w_star, Us,Vs, epochs=None, out_dir='.'
             axs[i].plot(epochs, np.abs(overlaps[i])[:,j,j], c=f'C{j}')
             for k in range(j+1,m):
                 axs[i].plot(epochs, np.abs(overlaps[i])[:,j,k], c=f'C{j}', ls='--')
-    fig.savefig(f'{out_dir}/plot_alignment_wstar.png', bbox_inches="tight")
+    fig.savefig(join(out_dir, 'plot_alignment_wstar.png'), bbox_inches="tight")
     plt.close(fig)
 
 
@@ -131,7 +131,7 @@ def plot_singular_values (Ss, epochs=None, out_dir='.', title=''):
     for l, S in enumerate(Ss):
         ax.plot(epochs, PR(S), label=f"{l+1}")
     ax.legend(loc="best", title="layer")
-    fig.savefig(f'{out_dir}/plot_s-values_PR.png', bbox_inches="tight")
+    fig.savefig(join(out_dir, 'plot_s-values_PR.png'), bbox_inches="tight")
     plt.close(fig)
 
     # ALL SINGULAR VALUES
@@ -146,7 +146,7 @@ def plot_singular_values (Ss, epochs=None, out_dir='.', title=''):
         ax.set_ylabel('singular value')
         for s in S.T:
             ax.plot(epochs, s)
-    fig.savefig(f'{out_dir}/plot_s-values.png', bbox_inches="tight")
+    fig.savefig(join(out_dir, 'plot_s-values.png'), bbox_inches="tight")
     plt.close(fig)
 
     # SINGULAR VALUES DISTRIBUTION
@@ -164,7 +164,7 @@ def plot_singular_values (Ss, epochs=None, out_dir='.', title=''):
         ax.hist(S[0], density=True, bins=30, label="initial", alpha=0.4)
         ax.hist(S[-1], density=True, bins=30, label="trained", alpha=0.4)
         ax.legend(loc="best")
-    fig.savefig(f'{out_dir}/plot_eval_distr.png', bbox_inches="tight")
+    fig.savefig(join(out_dir, 'plot_eval_distr.png'), bbox_inches="tight")
     plt.close(fig)
 
 
@@ -192,7 +192,7 @@ def plot_loss_accuracy (train_loss, test_loss, train_acc=None, test_acc=None,
     ax.set_ylabel('Train and test loss')
     ax.set_xlabel('epoch')
     ax.legend(loc="best")
-    fig.savefig(f'{out_dir}/plot_loss.png', bbox_inches="tight")
+    fig.savefig(join(out_dir, 'plot_loss.png'), bbox_inches="tight")
     plt.close(fig)
 
     if (train_acc is not None) and (test_acc is not None):
@@ -207,7 +207,7 @@ def plot_loss_accuracy (train_loss, test_loss, train_acc=None, test_acc=None,
         ax.set_ylabel('Train and test accuracy')
         ax.set_xlabel('epoch')
         ax.legend(loc="best")
-        fig.savefig(f'{out_dir}/plot_accuracy.png', bbox_inches="tight")
+        fig.savefig(join(out_dir, 'plot_accuracy.png'), bbox_inches="tight")
         plt.close(fig)
 
 
@@ -231,7 +231,7 @@ def plot_weights (model_weights, weights_norm, epochs=None, out_dir='.', title='
     for i, (norm, c) in enumerate(zip(weights_norm, colors)):
         ax.plot(epochs, norm/norm[0], c=c, label=f'{i+1}: {norm[0]:.2f}')
     ax.legend(loc='best', title="layer: init value")
-    fig.savefig(f'{out_dir}/plot_weights_norm.png', bbox_inches="tight")
+    fig.savefig(join(out_dir, 'plot_weights_norm.png'), bbox_inches="tight")
     plt.close(fig)
 
     # HISTOGRAM OF THE WEIGHTS
@@ -244,7 +244,7 @@ def plot_weights (model_weights, weights_norm, epochs=None, out_dir='.', title='
     for l, W in enumerate(model_weights):
         ax.hist(W[-1].ravel(), density=True, bins=100, label=f"W_{l+1}", alpha=0.3)
     ax.legend(loc="best")
-    fig.savefig(f'{out_dir}/plot_weights_histogram.png', bbox_inches="tight")
+    fig.savefig(join(out_dir, 'plot_weights_histogram.png'), bbox_inches="tight")
     plt.close(fig)
 
 
@@ -264,7 +264,7 @@ def plot_hidden_units (hidden, epochs=None, out_dir='.', title=''):
     for l, h in enumerate(hidden):
         ax.plot(epochs, np.linalg.norm(h, axis=1), label=f"X_{l+1}")
     ax.legend(loc="best", title="hidden layer")
-    fig.savefig(f'{out_dir}/plot_hidden_layer_norm.png', bbox_inches="tight")
+    fig.savefig(join(out_dir, 'plot_hidden_layer_norm.png'), bbox_inches="tight")
     plt.close(fig)
 
     # HISTOGRAM OF THE HIDDEN LAYER(S)
@@ -275,7 +275,7 @@ def plot_hidden_units (hidden, epochs=None, out_dir='.', title=''):
     for i, h in enumerate(hidden):
         ax.hist(h[-1], density=True, bins="sqrt", label=f"X_{l+1}", alpha=0.3)
     ax.legend(loc="best", title="hidden layer")
-    fig.savefig(f'{out_dir}/plot_hidden_layer_histogram.png', bbox_inches="tight")
+    fig.savefig(join(out_dir, 'plot_hidden_layer_histogram.png'), bbox_inches="tight")
     plt.close(fig)
 
 
