@@ -85,6 +85,32 @@ if __name__ == "__main__":
     train_kwargs.update(cuda_kwargs)
     test_kwargs.update(cuda_kwargs)
 
+    # ==================================================
+    #   DATASET
+
+    np.random.seed(1871)
+    if d_output == 1:
+        w_star = np.ones(N)
+        # w_star = np.random.randn(N)
+        w_star /= np.linalg.norm(w_star)
+    elif d_output == 2:
+        u_1 = np.array([1,1])/np.sqrt(2)
+        u_2 = np.array([-1,1])/np.sqrt(2)
+        v_1 = np.ones(N)/np.sqrt(N)
+        v_2 = np.zeros(N); v_2[0] = 1; v_2[2] = -1; v_2 /= np.sqrt(2)
+        w_star = 1. * u_1[:,None]*v_1[None,:] \
+               + .2 * u_2[:,None]*v_2[None,:]
+    else:
+        raise ValueError("invalid value of 'd_output'")
+
+    # define torch dataset and dataloader
+    train_dataset = LinearRegressionDataset(w_star, n_train)
+    test_dataset = LinearRegressionDataset(w_star, n_test)
+
+    w_star = train_dataset.w
+    np.save(f"{out_dir}/w_star.npy", w_star)
+
+    d_output, d_input = w_star.shape
 
     # ==================================================
     #   TRAINING/TESTING
@@ -92,31 +118,6 @@ if __name__ == "__main__":
     if training:
 
         print("\nTRAINING ...")
-
-        '''
-        Generate dataset
-        '''
-        # Define target linear transformation
-        np.random.seed(1871)
-        if d_output == 1:
-            w_star = np.ones(N)
-            # w_star = np.random.randn(N)
-            w_star /= np.linalg.norm(w_star)
-        elif d_output == 2:
-            u_1 = np.array([1,1])/np.sqrt(2)
-            u_2 = np.array([-1,1])/np.sqrt(2)
-            v_1 = np.ones(N)/np.sqrt(N)
-            v_2 = np.zeros(N); v_2[0] = 1; v_2[2] = -1; v_2 /= np.sqrt(2)
-            w_star = 1. * u_1[:,None]*v_1[None,:] \
-                   + .2 * u_2[:,None]*v_2[None,:]
-        else:
-            raise ValueError("invalid value of 'd_output'")
-            
-        np.save(f"{out_dir}/w_star.npy", w_star)
-
-        # define torch dataset and dataloader
-        train_dataset = LinearRegressionDataset(w_star, n_train)
-        test_dataset = LinearRegressionDataset(w_star, n_test)
 
         train_loader = torch.utils.data.DataLoader(train_dataset,**train_kwargs)
         test_loader = torch.utils.data.DataLoader(test_dataset,**test_kwargs)
