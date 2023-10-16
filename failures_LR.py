@@ -46,10 +46,9 @@ if __name__ == "__main__":
         drop_l = sys.argv[6]    # layer(s) with dropout, comma separated ("1", "1,2", "1,3" etc)
 
     # set (and create) output directory
-    out_dir = join("outputs_LR", f"{n_layers}L_{d_output}d", scaling)
-    # out_dir = join("outputs_AS", f"{n_layers}L", scaling)
+    # out_dir = join("outputs_LR", f"{n_layers}L_{d_output}d", scaling)
+    out_dir = join("outputs_AS", f"{n_layers}L", scaling)
     out_dir = join(out_dir, f"N_{N:04d}", f"{drop_l}", f"q_{drop_p:.2f}")
-    out_dir = join(out_dir, "longrun")
 
     wd = 0.
     if drop_p == 0.:
@@ -59,6 +58,9 @@ if __name__ == "__main__":
             pass
         out_dir = join(out_dir, f"wd_{wd:.5f}")
 
+    # out_dir = join(out_dir, "longrun")
+    out_dir = join(out_dir, "shortrun")
+    
     os.makedirs(out_dir, exist_ok=True)
 
     print(f"Output directory:\n\t{out_dir}\n")
@@ -70,8 +72,10 @@ if __name__ == "__main__":
     # ==================================================
     #   SETUP TRAINING
 
-    n_epochs = 500000
-    n_skip = 500 # epochs to skip when saving data
+    # n_epochs = 500000
+    # n_skip = 500 # epochs to skip when saving data
+    n_epochs = 500
+    n_skip = 1 # epochs to skip when saving data
 
     n_train = 10000
     n_test = 10000
