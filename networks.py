@@ -44,24 +44,26 @@ class Net(nn.Module):
                 f_in = 1.*pars.data.size()[1]
                 if scaling == "lin":
                     # initialisation of the weights -- N(0, 1/n)
-                    scaling_f = lambda f_in: 1./f_in
+                    init_f = lambda f_in: (0., 1./f_in)
                 elif scaling == "sqrt":
                     # initialisation of the weights -- N(0, 1/sqrt(n))
-                    scaling_f = lambda f_in: 1./np.sqrt(f_in)
+                    init_f = lambda f_in: (0., 1./np.sqrt(f_in))
                 elif scaling == "const":
                     # initialisation of the weights independent of n
-                    scaling_f = lambda f_in: 0.001
+                    init_f = lambda f_in: (0., 0.001)
                 elif isinstance(scaling, float) and scaling > 0:
                     # initialisation of the weights -- N(0, 1/n**alpha)
                     '''
                     UNTESTED
                     '''
-                    scaling_f = lambda f_in: 1./np.power(f_in, scaling)
+                    init_f = lambda f_in: (0., 1./np.power(f_in, scaling))
                 else:
                     raise ValueError(
                         f"Invalid scaling option '{scaling}'\n" + \
                          "Choose either 'sqrt', 'lin' or a float larger than 0")
-                pars.data.normal_(0, scaling_f(f_in))
+
+                mu, sigma = init_f(f_in)
+                pars.data.normal_(mu, sigma)
 
     def save(self, filename):
         torch.save(self.state_dict(), filename)
