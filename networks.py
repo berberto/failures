@@ -38,8 +38,18 @@ class Net(nn.Module):
 
     def init_weights (self, scaling):
         torch.manual_seed(1871)
+
+        scaling_arr = scaling.split(",")
+        assert len(scaling_arr) in [1, len(list(self.named_parameters()))], \
+            "The `scaling` parameter must be a string with one of the available options, "+\
+            "or multiple available options comma-separated (as many as the number of layers)"
         
-        for name, pars in self.named_parameters():
+        for l, (name, pars) in enumerate(self.named_parameters()):
+            if len(scaling_arr) == 1:
+                scaling = scaling_arr[0]
+            else:
+                scaling = scaling_arr[l]
+
             if "weight" in name:
                 f_in = 1.*pars.data.size()[1]
                 if scaling == "lin":
