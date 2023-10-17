@@ -38,30 +38,29 @@ class Net(nn.Module):
 
     def init_weights (self, scaling):
         torch.manual_seed(1871)
-
-        if scaling == "lin":
-            # initialisation of the weights -- N(0, 1/n)
-            scaling_f = lambda f_in: 1./f_in
-        elif scaling == "sqrt":
-            # initialisation of the weights -- N(0, 1/sqrt(n))
-            scaling_f = lambda f_in: 1./np.sqrt(f_in)
-        elif scaling == "const":
-            # initialisation of the weights independent of n
-            scaling_f = lambda f_in: 0.001
-        elif isinstance(scaling, float) and scaling > 0:
-            # initialisation of the weights -- N(0, 1/n**alpha)
-            '''
-            UNTESTED
-            '''
-            scaling_f = lambda f_in: 1./np.power(f_in, scaling)
-        else:
-            raise ValueError(
-                f"Invalid scaling option '{scaling}'\n" + \
-                 "Choose either 'sqrt', 'lin' or a float larger than 0")
         
         for name, pars in self.named_parameters():
             if "weight" in name:
                 f_in = 1.*pars.data.size()[1]
+                if scaling == "lin":
+                    # initialisation of the weights -- N(0, 1/n)
+                    scaling_f = lambda f_in: 1./f_in
+                elif scaling == "sqrt":
+                    # initialisation of the weights -- N(0, 1/sqrt(n))
+                    scaling_f = lambda f_in: 1./np.sqrt(f_in)
+                elif scaling == "const":
+                    # initialisation of the weights independent of n
+                    scaling_f = lambda f_in: 0.001
+                elif isinstance(scaling, float) and scaling > 0:
+                    # initialisation of the weights -- N(0, 1/n**alpha)
+                    '''
+                    UNTESTED
+                    '''
+                    scaling_f = lambda f_in: 1./np.power(f_in, scaling)
+                else:
+                    raise ValueError(
+                        f"Invalid scaling option '{scaling}'\n" + \
+                         "Choose either 'sqrt', 'lin' or a float larger than 0")
                 pars.data.normal_(0, scaling_f(f_in))
 
     def save(self, filename):
