@@ -114,7 +114,8 @@ def plot_alignment_wstar (model_weights, w_star, Us,Vs, epochs=None, out_dir='.'
     plt.close(fig)
 
 
-def plot_singular_values (Ss, epochs=None, out_dir='.', title=''):
+def plot_singular_values (Ss, epochs=None, out_dir='.', title='',
+    xlim=None):
 
     n_layers = len(Ss)
     n_snapshots = len(Ss[0])
@@ -141,6 +142,8 @@ def plot_singular_values (Ss, epochs=None, out_dir='.', title=''):
     # fig.suptitle(title)
     for l, S in enumerate(Ss):
         ax = axs[l]
+        if xlim is not None:
+            ax.set_xlim(xlim)
         ax.set_title(rf"$W_{l+1}$")
         ax.set_xlabel('epoch')
         ax.set_ylabel('singular value')
@@ -169,7 +172,8 @@ def plot_singular_values (Ss, epochs=None, out_dir='.', title=''):
 
 
 def plot_loss_accuracy (train_loss, test_loss, train_acc=None, test_acc=None,
-        train_epochs=None, test_epochs=None, out_dir='.', title=''):
+        train_epochs=None, test_epochs=None, out_dir='.', title='',
+        yscale=None, xscale=None, xlim=None):
 
     train_snapshots = len(train_loss)
     if train_epochs is None:
@@ -183,12 +187,16 @@ def plot_loss_accuracy (train_loss, test_loss, train_acc=None, test_acc=None,
     fig, ax = plt.subplots(figsize=(3, 2))
     # ax.scatter(np.arange(len(test_loss)), test_loss, label="test", s=2, c="C1")
     # ax.plot(train_loss, label="train", c="C0")
+    if xlim is not None:
+        ax.set_xlim(xlim)
     ax.scatter(test_epochs, test_loss, label="test", s=2, c="C1")
     ax.plot(train_epochs, train_loss, label="train", c="C0")
     # ax.set_title(title)
     ax.grid()
-    # ax.set_xscale("log")
-    ax.set_yscale("log")
+    if xscale is not None:
+        ax.set_xscale(xscale)
+    if yscale is not None:
+        ax.set_yscale(yscale)
     ax.set_ylabel('Train and test loss')
     ax.set_xlabel('epoch')
     ax.legend(loc="best")
