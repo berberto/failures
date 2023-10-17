@@ -298,7 +298,6 @@ def plot_covariance (cov, d_output=1, IO=False, out_dir='.', title=''):
 
     fig, axs = plt.subplots(1, 2, figsize=(9, 3))
     plt.subplots_adjust(wspace=0.4)
-    # fig.suptitle(title)
     ax = axs[0]
     ax.set_title("Covariance matrix")
     ax.set_xlabel('i')
@@ -332,7 +331,9 @@ def plot_covariance (cov, d_output=1, IO=False, out_dir='.', title=''):
         kwargs = dict(vmin=-1, vmax=1, cmap="bwr", aspect="equal")
         im = ax[0].imshow(cov_Xy, **kwargs); ax[0].set_title(r"$\Sigma^{xy}$")
         ax[1].imshow(-U[:,:d_output], **kwargs); ax[1].set_title(r"$U$")
-        ax[2].imshow(np.diag(S), **kwargs); ax[2].set_title(r"$S$")
+        ax[2].imshow(np.diag(S), aspect="equal"); ax[2].set_title(r"$S$")
+        for i,s in enumerate(S):
+            ax[2].text(i,i,f"{s:.2f}", c='r',verticalalignment="center",horizontalalignment="center")
         ax[3].imshow(-Vh, **kwargs); ax[3].set_title(r"$V^T$")
         fig.colorbar(im, ax=ax.ravel().tolist())
         fig.savefig(join(out_dir, 'plot_input-output_covariance.png'), bbox_inches="tight")
