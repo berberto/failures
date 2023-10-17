@@ -5,7 +5,7 @@
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --time=5-00:00:00
-#SBATCH --array=1-16
+#SBATCH --array=1-8
 #SBATCH --job-name=LRsem
 #SBATCH --mem=16G
 

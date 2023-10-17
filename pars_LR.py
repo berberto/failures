@@ -8,11 +8,11 @@ parser.add_argument('--run', dest='run', action='store_true', default=False, hel
 args = parser.parse_args()
 run = args.run
 
-s_vals = ["const", "sqrt"] # ["sqrt", "lin"] # initial parameters scaling
+s_vals = ["sqrt,lin"] # ["sqrt", "lin"] # initial parameters scaling
 
-N_vals = [16, 32] # number of units per hidden layer
+N_vals = [16, 64, 256, 1024] # number of units per hidden layer
 
-l_vals = [2, 3] # [2,3,5,10] # number of layers
+l_vals = [2] # [2,3,5,10] # number of layers
 
 d_vals = [4] # [1,2] # output dimension
 
