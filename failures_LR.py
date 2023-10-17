@@ -46,7 +46,6 @@ if __name__ == "__main__":
         drop_l = sys.argv[6]    # layer(s) with dropout, comma separated ("1", "1,2", "1,3" etc)
 
     # set (and create) output directory
-    # out_dir = join("outputs_LR", f"{n_layers}L_{d_output}d", scaling)
     out_dir = join("outputs_AS", f"{n_layers}L", scaling)
     out_dir = join(out_dir, f"N_{N:04d}", f"{drop_l}", f"q_{drop_p:.2f}")
 
@@ -95,24 +94,8 @@ if __name__ == "__main__":
     #   DATASET
 
     np.random.seed(1871)
-    # if d_output == 1:
-    #     w_star = np.ones(N)
-    #     # w_star = np.random.randn(N)
-    #     w_star /= np.linalg.norm(w_star)
-    # elif d_output == 2:
-    #     u_1 = np.array([1,1])/np.sqrt(2)
-    #     u_2 = np.array([-1,1])/np.sqrt(2)
-    #     v_1 = np.ones(N)/np.sqrt(N)
-    #     v_2 = np.zeros(N); v_2[0] = 1; v_2[2] = -1; v_2 /= np.sqrt(2)
-    #     w_star = 1. * u_1[:,None]*v_1[None,:] \
-    #            + .2 * u_2[:,None]*v_2[None,:]
-    # else:
-    #     raise ValueError("invalid value of 'd_output'")
-
-    # # define torch dataset and dataloader
-    # train_dataset = LinearRegressionDataset(w_star, n_train)
-    # test_dataset = LinearRegressionDataset(w_star, n_test)
-
+    
+    # define torch dataset and dataloader
     train_dataset = SemanticsDataset(n_train)
     test_dataset = SemanticsDataset(n_test)
 
