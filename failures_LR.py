@@ -18,7 +18,7 @@ from training_utils import test_regressor as test
 from training_utils import append
 from data import LinearRegressionDataset, SemanticsDataset
 
-from stats_utils import run_statistics, load_statistics
+from stats_utils import run_statistics, load_statistics #, diagonal_matrix
 from plot_utils import (plot_alignment_layers, plot_alignment_wstar,
                         plot_singular_values, plot_loss_accuracy,
                         plot_weights, plot_hidden_units,
@@ -205,22 +205,37 @@ if __name__ == "__main__":
 
         weights_norm, (Us, Ss, Vs), projs = load_statistics(out_dir)
 
-        title = f"init {'1/N' if scaling == 'lin' else '1/sqrt(N)'}; L={n_layers}; N={N:04d}; drop {drop_l} wp {drop_p:.2f}"
+        # calculate the product of all matrices
+        print("Calculating product of all weight matrices...", end=" ")
+        # diag_Ss = [diagonal_matrix(S, U.shape[-1], V.shape[-2]) for U,S,V in zip(Us,Ss,Vs)]
+        # W_product = np.einsum('...ij,...jk->...ik', Us[-1], diag_Ss[-1] )
+        # for l in range(1, n_layers):
+        #     print(f"Layer {l}, {W_product.shape}, {projs[-l].shape}, {diag_Ss[-(l+1)].shape}")
+        #     W_product = np.einsum('...ij,...jk->...ik', W_product, projs[-l] )
+        #     W_product = np.einsum('...ij,...jk->...ik', W_product, diag_Ss[-(l+1)] )
+        # W_product = np.einsum('...ij,...jk->...ik', W_product, Vs[0] )
+        W_product = model_weights[0]
+        for l in range(1, n_layers):
+            W_product = np.einsum('...ij,...jk->...ik', model_weights[l], W_product)
+        np.save(f"{out_dir}/W_product.npy", W_product)
+        print("done.")
 
-        plot_covariance (covariance, IO=True, d_output=d_output, out_dir=out_dir, title=title)
+        title = f"init {scaling}; L={n_layers}; N={N:04d}; drop {drop_l} wp {drop_p:.2f}"
+
+        plot_covariance (covariance, IO=True, d_output=d_output, out_dir=out_dir, title=title, W_product=W_product)
         
         plot_alignment_layers (projs, d_output=d_output, epochs=saved_epochs, out_dir=out_dir, title=title)
 
         plot_alignment_wstar (model_weights, w_star, Us,Vs, epochs=saved_epochs, out_dir=out_dir, title=title)
 
-        plot_singular_values (Ss, epochs=saved_epochs, out_dir=out_dir, title=title)
+        plot_singular_values (Ss, epochs=saved_epochs, out_dir=out_dir, title=title)#, xlim=[0,100*N//16])
 
         try:
             # new version where testing is done only every `n_skip` epochs
             # -- throws an exception if testing done every epoch
-            plot_loss_accuracy (train_loss, test_loss, test_epochs=saved_epochs, out_dir=out_dir, title=title)
+            plot_loss_accuracy (train_loss, test_loss, test_epochs=saved_epochs, out_dir=out_dir, title=title) #, xlim=[0,20])
         except:
-            plot_loss_accuracy (train_loss, test_loss, out_dir=out_dir, title=title)
+            plot_loss_accuracy (train_loss, test_loss, out_dir=out_dir, title=title) #, xlim=[0,20])
 
         plot_weights (model_weights, weights_norm, epochs=saved_epochs, out_dir=out_dir, title=title)
 
