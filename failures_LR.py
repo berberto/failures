@@ -209,19 +209,10 @@ if __name__ == "__main__":
         weights_norm, (Us, Ss, Vs), projs = load_statistics(out_dir)
 
         # calculate the product of all matrices
-        print("Calculating product of all weight matrices...", end=" ")
-        # diag_Ss = [diagonal_matrix(S, U.shape[-1], V.shape[-2]) for U,S,V in zip(Us,Ss,Vs)]
-        # W_product = np.einsum('...ij,...jk->...ik', Us[-1], diag_Ss[-1] )
-        # for l in range(1, n_layers):
-        #     print(f"Layer {l}, {W_product.shape}, {projs[-l].shape}, {diag_Ss[-(l+1)].shape}")
-        #     W_product = np.einsum('...ij,...jk->...ik', W_product, projs[-l] )
-        #     W_product = np.einsum('...ij,...jk->...ik', W_product, diag_Ss[-(l+1)] )
-        # W_product = np.einsum('...ij,...jk->...ik', W_product, Vs[0] )
         W_product = model_weights[0]
         for l in range(1, n_layers):
             W_product = np.einsum('...ij,...jk->...ik', model_weights[l], W_product)
         np.save(f"{out_dir}/W_product.npy", W_product)
-        print("done.")
 
         title = f"init {scaling}; L={n_layers}; N={N:04d}; drop {drop_l} wp {drop_p:.2f}"
 
