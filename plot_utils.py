@@ -35,14 +35,14 @@ def plot_alignment_layers (projs, d_output=10, epochs=None, out_dir='.', title='
     fig.savefig(join(out_dir, 'plot_alignment_layers_final.png'), bbox_inches="tight")
 
     duration = 10 # in s
-    n_frames = 50
-    dt = duration / n_frames * 1000.
-    frames = np.arange(0,len(projs[0])-1,n_frames).astype(int)
+    n_frames = 50 # total number of frames to plot
+    dt = duration / n_frames * 1000. # in ms
+    frames = np.linspace(0,len(projs[0])-1,n_frames).astype(int)
     ani = FuncAnimation(fig, plot_frame,
                         interval=dt,
                         frames=frames,
                         blit=False)
-    ani.save(f'{out_dir}/plot_alignment_layers.gif')
+    ani.save(join(out_dir, 'plot_alignment_layers.gif'))
 
     cols=n_layers-1
     fig, axs = plt.subplots(1, cols, figsize=(cols*3, 2))
