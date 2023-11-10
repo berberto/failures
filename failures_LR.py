@@ -62,7 +62,10 @@ if __name__ == "__main__":
     n_epochs = 2000
     n_skip = 1 # epochs to skip when saving data
     out_dir = join(out_dir, "shortrun")
-    
+    # n_epochs = 500000
+    # n_skip = 500 # epochs to skip when saving data
+    # out_dir = join(out_dir, "longrun")
+
     os.makedirs(out_dir, exist_ok=True)
 
     print(f"Output directory:\n\t{out_dir}\n")
