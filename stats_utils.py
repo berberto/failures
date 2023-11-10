@@ -46,3 +46,24 @@ def load_statistics (out_dir):
     projs = pickle.load( open(f"{out_dir}/projs.pkl", "rb") )
 
     return weights_norm, (Us, Ss, Vs), projs
+
+
+def diagonal_matrix (S, n: int, m: int):
+    '''
+    produces an (n, m) matrix, with main diagonal S
+
+    If S is a (r,) array, with r = min(n,m), it produces the matrix (n,m) with main diagonal equal S
+
+    If S is a (..., r) array, it produces an array (..., n,m).
+    '''
+    assert isinstance(n, int) and isinstance(m, int), "n and m must be integers"
+    rank = min(n,m)
+    assert S.shape[-1] == rank, "length of S must be equal to the minimum dimension"
+
+    _S = S.reshape(-1, rank)    
+    diag_S = np.zeros((_S.shape[0], n, m))
+
+    diag_S[:, :rank, :rank] = np.array([np.diag(s) for s in _S])
+    diag_S = np.reshape( diag_S, (*S.shape[:-1],n,m) )
+
+    return diag_S
