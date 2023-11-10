@@ -287,7 +287,7 @@ def plot_hidden_units (hidden, epochs=None, out_dir='.', title=''):
     plt.close(fig)
 
 
-def plot_covariance (cov, d_output=1, IO=False, out_dir='.', title=''):
+def plot_covariance (cov, d_output=1, IO=False, W_product=None, out_dir='.', title=''):
 
     cov_XX = cov
     if IO:
@@ -327,13 +327,57 @@ def plot_covariance (cov, d_output=1, IO=False, out_dir='.', title=''):
     if IO:
 
         U, S, Vh = np.linalg.svd(cov_Xy)
-        fig, ax = plt.subplots(1,4,figsize=(10,3))
+        if W_product is not None:
+            # calculate the input-output covariance matrix given the product of the weights
+            cov_Xy_l = np.einsum('...ij,jk->...ik', W_product, cov_XX).transpose((0,2,1))
+            U_l, S_l, Vh_l = np.linalg.svd(cov_Xy_l)
+            fig, axs = plt.subplots(2,4,figsize=(10,7))
+
+        else:
+            fig, axs = plt.subplots(1,4,figsize=(10,3))
+        ax = axs.ravel()
+
         kwargs = dict(vmin=-1, vmax=1, cmap="bwr", aspect="equal")
-        im = ax[0].imshow(cov_Xy, **kwargs); ax[0].set_title(r"$\Sigma^{xy}$")
-        ax[1].imshow(-U[:,:d_output], **kwargs); ax[1].set_title(r"$U$")
-        ax[2].imshow(np.diag(S), aspect="equal"); ax[2].set_title(r"$S$")
-        for i,s in enumerate(S):
-            ax[2].text(i,i,f"{s:.2f}", c='r',verticalalignment="center",horizontalalignment="center")
-        ax[3].imshow(-Vh, **kwargs); ax[3].set_title(r"$V^T$")
-        fig.colorbar(im, ax=ax.ravel().tolist())
+
+        def plot_frame(frame):
+            # plot the input-output covariance matrix
+            for a in ax[:4]:
+                a.clear()
+            im = ax[0].imshow(cov_Xy, **kwargs); ax[0].set_title(r"$\Sigma^{xy}$")
+            # plot the left singular vectors
+            ax[1].imshow(-U[:,:d_output], **kwargs); ax[1].set_title(r"$U$")
+            # plot the diagonal singular-value matrix
+            ax[2].imshow(np.diag(S), aspect="equal"); ax[2].set_title(r"$S$")
+            for i,s in enumerate(S):
+                ax[2].text(i,i,f"{s:.2f}", c='r',verticalalignment="center",horizontalalignment="center")
+            # plot the right signular vectors
+            ax[3].imshow(-Vh, **kwargs); ax[3].set_title(r"$V^T$")
+
+            if W_product is not None:
+                for a in ax[4:]:
+                    a.clear()
+                # plot the input-output covariance matrix
+                im = ax[4].imshow(cov_Xy_l[frame], **kwargs); ax[4].set_title(r"$\Sigma^{xy}$")
+                # plot the left singular vectors
+                ax[5].imshow(-U_l[frame,:,:d_output], **kwargs); ax[5].set_title(r"$U$")
+                # plot the diagonal singular-value matrix
+                ax[6].imshow(np.diag(S_l[frame]), aspect="equal"); ax[6].set_title(r"$S$")
+                for i,s in enumerate(S_l[frame]):
+                    ax[6].text(i,i,f"{s:.2f}", c='r',verticalalignment="center",horizontalalignment="center")
+                # plot the right signular vectors
+                ax[7].imshow(-Vh_l[frame], **kwargs); ax[7].set_title(r"$V^T$")
+
+        im = plot_frame(-1)
+        # fig.colorbar(im, ax=ax[4:].ravel().tolist())
+        # fig.colorbar(im, ax=ax[:4].ravel().tolist())
         fig.savefig(join(out_dir, 'plot_input-output_covariance.png'), bbox_inches="tight")
+
+        duration = 10 # in s
+        n_frames = 50 # total number of frames to plot
+        dt = duration / n_frames * 1000. # in ms
+        frames = np.linspace(0,len(cov_Xy_l)-1,n_frames).astype(int) # indices of frames to plot
+        ani = FuncAnimation(fig, plot_frame,
+                            interval=dt,
+                            frames=frames,
+                            blit=False)
+    ani.save(join(out_dir, 'plot_input-output_covariance.gif'))
