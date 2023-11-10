@@ -36,17 +36,19 @@ if __name__ == "__main__":
 
     # get parameters as inputs
     scaling = sys.argv[1]       # init pars scaling ("lin"=1/N, "sqrt"=1/sqrt(N), or "const"=0.001)
-    N = int(sys.argv[2])        # number of input and hidden units
-    n_layers = int(sys.argv[3]) # number of layers (hidden + 1)
-    d_output = int(sys.argv[4]) # output dimension
-    drop_p = float(sys.argv[5]) # probability of weight drop
+    activation = sys.argv[2]    # hidden layer activation function
+    N = int(sys.argv[3])        # number of input and hidden units
+    n_layers = int(sys.argv[4]) # number of layers (hidden + 1)
+    d_output = int(sys.argv[5]) # output dimension
+    drop_p = float(sys.argv[6]) # probability of weight drop
     if not drop_p:
         drop_l = None
     else:
-        drop_l = sys.argv[6]    # layer(s) with dropout, comma separated ("1", "1,2", "1,3" etc)
+        drop_l = sys.argv[7]    # layer(s) with dropout, comma separated ("1", "1,2", "1,3" etc)
 
     # set (and create) output directory
-    out_dir = join("outputs_AS", f"{n_layers}L", scaling)
+    out_dir = join( "outputs_AS", "test" )
+    out_dir = join( out_dir, f"{n_layers}L_{activation}", scaling)
     out_dir = join(out_dir, f"N_{N:04d}", f"{drop_l}", f"q_{drop_p:.2f}")
 
     wd = 0.
@@ -57,7 +59,8 @@ if __name__ == "__main__":
             pass
         out_dir = join(out_dir, f"wd_{wd:.5f}")
 
-    # out_dir = join(out_dir, "longrun")
+    n_epochs = 2000
+    n_skip = 1 # epochs to skip when saving data
     out_dir = join(out_dir, "shortrun")
     
     os.makedirs(out_dir, exist_ok=True)
@@ -132,7 +135,8 @@ if __name__ == "__main__":
         '''
         # define network model
         model = DeepNet(d_input=d_input, d_output=d_output, d_hidden=(n_layers - 1)*[N],
-                    layer_type=functools.partial(LinearWeightDropout, drop_p=drop_p), 
+                    layer_type=functools.partial(LinearWeightDropout, drop_p=drop_p),
+                    activation=activation, output_activation='linear',
                     bias=False, scaling=scaling, drop_l=drop_l).to(device)
 
         optimizer = optim.SGD(model.parameters(), lr=lr, weight_decay=wd)
