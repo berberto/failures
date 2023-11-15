@@ -5,9 +5,9 @@
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --time=5-00:00:00
-#SBATCH --array=13-48
+#SBATCH --array=1-96
 #SBATCH --job-name=LRsem
-#SBATCH --mem=64G
+#SBATCH --mem=32G
 
 module load cuda/11.6
 

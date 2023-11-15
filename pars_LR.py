@@ -8,7 +8,7 @@ parser.add_argument('--run', dest='run', action='store_true', default=False, hel
 args = parser.parse_args()
 run = args.run
 
-s_vals = ["sqrt,lin", "sqrt", "const", "sqrt,const"] # initial parameters scaling
+s_vals = ["sqrt,lin", "sqrt,lin+", "const", "const+", "lin", "lin+", "sqrt,const", "sqrt,const+"] # initial parameters scaling
 
 a_vals = ["linear", "relu"] # initial parameters scaling
 

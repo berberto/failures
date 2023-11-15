@@ -55,12 +55,18 @@ class Net(nn.Module):
                 if scaling == "lin":
                     # initialisation of the weights -- N(0, 1/n)
                     init_f = lambda f_in: (0., 1./f_in)
+                elif scaling == "lin+":
+                    # initialisation of the weights -- N(0, 1/n)
+                    init_f = lambda f_in: (1./f_in, 1./f_in)
                 elif scaling == "sqrt":
                     # initialisation of the weights -- N(0, 1/sqrt(n))
                     init_f = lambda f_in: (0., 1./np.sqrt(f_in))
                 elif scaling == "const":
                     # initialisation of the weights independent of n
                     init_f = lambda f_in: (0., 0.001)
+                elif scaling == "const+":
+                    # initialisation of the weights independent of n
+                    init_f = lambda f_in: (0.001, 0.001)
                 elif isinstance(scaling, float) and scaling > 0:
                     # initialisation of the weights -- N(0, 1/n**alpha)
                     '''
