@@ -273,3 +273,19 @@ class ClassifierNet3L (LinearNet3L):
             return out, [h1,h2]
         else:
             return out
+
+
+def evaluate (model, device, loader):
+    model.eval()
+    with torch.no_grad():
+        for batch_idx, (X, _) in enumerate(loader):
+            X = X.clone().detach().float().to(device)
+            output = model.forward(X).cpu().numpy()
+            X = X.cpu().numpy()
+            if batch_idx == 0:
+                X_data = X
+                y_data = output
+            else:
+                X_data = np.vstack([X_data, X])
+                y_data = np.vstack([y_data, output])
+    return X_data, y_data
