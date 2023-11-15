@@ -329,20 +329,22 @@ def plot_covariance (cov, d_output=1, IO=False, W_product=None, out_dir='.', tit
         U, S, Vh = np.linalg.svd(cov_Xy)
         if W_product is not None:
             # calculate the input-output covariance matrix given the product of the weights
-            cov_Xy_l = np.einsum('...ij,jk->...ik', W_product, cov_XX).transpose((0,2,1))
+            # cov_Xy_l = np.einsum('...ij,jk->...ik', W_product, cov_XX).transpose((0,2,1))
+            cov_Xy_l = W_product
             U_l, S_l, Vh_l = np.linalg.svd(cov_Xy_l)
             fig, axs = plt.subplots(2,4,figsize=(10,7))
-
         else:
             fig, axs = plt.subplots(1,4,figsize=(10,3))
+        plt.tight_layout()
         ax = axs.ravel()
 
         kwargs = dict(vmin=-1, vmax=1, cmap="bwr", aspect="equal")
 
         def plot_frame(frame):
-            # plot the input-output covariance matrix
             for a in ax[:4]:
                 a.clear()
+            # plot the input-output covariance matrix of the (training) data
+            ax[0].set_ylabel("Training data")
             im = ax[0].imshow(cov_Xy, **kwargs); ax[0].set_title(r"$\Sigma^{xy}$")
             # plot the left singular vectors
             ax[1].imshow(-U[:,:d_output], **kwargs); ax[1].set_title(r"$U$")
@@ -356,7 +358,8 @@ def plot_covariance (cov, d_output=1, IO=False, W_product=None, out_dir='.', tit
             if W_product is not None:
                 for a in ax[4:]:
                     a.clear()
-                # plot the input-output covariance matrix
+                # plot the input-output covariance matrix from the model
+                ax[4].set_ylabel("Model")
                 im = ax[4].imshow(cov_Xy_l[frame], **kwargs); ax[4].set_title(r"$\Sigma^{xy}$")
                 # plot the left singular vectors
                 ax[5].imshow(-U_l[frame,:,:d_output], **kwargs); ax[5].set_title(r"$U$")
@@ -373,7 +376,7 @@ def plot_covariance (cov, d_output=1, IO=False, W_product=None, out_dir='.', tit
         fig.savefig(join(out_dir, 'plot_input-output_covariance.png'), bbox_inches="tight")
 
         duration = 10 # in s
-        n_frames = 50 # total number of frames to plot
+        n_frames = 100 # total number of frames to plot
         dt = duration / n_frames * 1000. # in ms
         frames = np.linspace(0,len(cov_Xy_l)-1,n_frames).astype(int) # indices of frames to plot
         ani = FuncAnimation(fig, plot_frame,
