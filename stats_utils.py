@@ -1,11 +1,15 @@
 import numpy as np
 import pickle
 import os
+from os.path import join
+
+def load_weights (out_dir):
+    return [np.load(join(out_dir,file))  for file in os.listdir(out_dir) if "weights_" in file and ".npy" in file]
 
 
 def run_statistics(out_dir):
 
-    weights_list = [np.load(os.path.join(out_dir,file))  for file in os.listdir(out_dir) if "weights_" in file and ".npy" in file]
+    weights_list = load_weights( out_dir )
 
     weights_norm = [np.linalg.norm(W, axis=(-1,-2)) for W in weights_list]
     with open(f"{out_dir}/weights_norm.pkl", "wb") as f:
@@ -48,6 +52,25 @@ def load_statistics (out_dir):
     return weights_norm, (Us, Ss, Vs), projs
 
 
+def load_data (out_dir):
+    # re-load saved data
+    saved_epochs = np.load( join(out_dir, "saved_epochs.npy") )
+    train_loss = np.load( join(out_dir, "train_loss.npy") )
+    test_loss = np.load( join(out_dir, "test_loss.npy") )
+    model_weights = load_weights (out_dir)
+    n_layers = len(model_weights)
+    hidden = [np.load( join(out_dir, f"hidden_{l+1}.npy") ) for l in range(n_layers - 1)]
+    covariance = np.load( join(out_dir, "covariance.npy") )
+    covariance_train = np.load( join(out_dir, "covariance_train.npy") )
+    covariance_test = np.load( join(out_dir, "covariance_test.npy") )
+
+    weights_norm, (Us, Ss, Vs), projs = load_statistics(out_dir)
+
+    return saved_epochs, train_loss, test_loss, hidden, model_weights, \
+            covariance, covariance_train, covariance_test, \
+            weights_norm, (Us, Ss, Vs), projs
+
+
 def diagonal_matrix (S, n: int, m: int):
     '''
     produces an (n, m) matrix, with main diagonal S
@@ -60,7 +83,7 @@ def diagonal_matrix (S, n: int, m: int):
     rank = min(n,m)
     assert S.shape[-1] == rank, "length of S must be equal to the minimum dimension"
 
-    _S = S.reshape(-1, rank)    
+    _S = S.reshape(-1, rank)
     diag_S = np.zeros((_S.shape[0], n, m))
 
     diag_S[:, :rank, :rank] = np.array([np.diag(s) for s in _S])

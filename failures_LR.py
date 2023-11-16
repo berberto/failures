@@ -12,13 +12,14 @@ from os.path import join
 import numpy as np
 import pickle
 
-from networks import LinearWeightDropout, DeepNet
+from networks import LinearWeightDropout, DeepNet, evaluate
 from training_utils import train_regressor as train
 from training_utils import test_regressor as test
 from training_utils import append
 from data import LinearRegressionDataset, SemanticsDataset
 
-from stats_utils import run_statistics, load_statistics #, diagonal_matrix
+from path_utils import get_path
+from stats_utils import run_statistics, load_statistics, load_data #, diagonal_matrix
 from plot_utils import (plot_alignment_layers, plot_alignment_wstar,
                         plot_singular_values, plot_loss_accuracy,
                         plot_weights, plot_hidden_units,
@@ -46,25 +47,25 @@ if __name__ == "__main__":
     else:
         drop_l = sys.argv[7]    # layer(s) with dropout, comma separated ("1", "1,2", "1,3" etc)
 
-    # set (and create) output directory
-    out_dir = join( "outputs_AS", "test" )
-    out_dir = join( out_dir, f"{n_layers}L_{activation}", scaling)
-    out_dir = join(out_dir, f"N_{N:04d}", f"{drop_l}", f"q_{drop_p:.2f}")
-
     wd = 0.
     if drop_p == 0.:
         try:
             wd = float(sys.argv[7])
         except:
             pass
-        out_dir = join(out_dir, f"wd_{wd:.5f}")
+    
+    base_dir = "outputs_AS"
 
-    n_epochs = 2000
-    n_skip = 1 # epochs to skip when saving data
-    out_dir = join(out_dir, "shortrun")
-    # n_epochs = 500000
-    # n_skip = 500 # epochs to skip when saving data
-    # out_dir = join(out_dir, "longrun")
+    # n_epochs = 500
+    # n_skip = 1 # epochs to skip when saving data
+    # sub_dir = "shortrun"
+    n_epochs = 500000
+    n_skip = 500 # epochs to skip when saving data
+    sub_dir = "longrun"
+
+    out_dir = get_path(base_dir, n_layers, activation,
+                       scaling, N, drop_l, drop_p,
+                       wd=wd, sub_dir=sub_dir)
 
     os.makedirs(out_dir, exist_ok=True)
 
@@ -76,11 +77,6 @@ if __name__ == "__main__":
 
     # ==================================================
     #   SETUP TRAINING
-
-    # n_epochs = 500000
-    # n_skip = 500 # epochs to skip when saving data
-    n_epochs = 500
-    n_skip = 1 # epochs to skip when saving data
 
     n_train = 10000
     n_test = 10000
@@ -106,7 +102,7 @@ if __name__ == "__main__":
     test_dataset = SemanticsDataset(n_test)
 
     w_star = train_dataset.w
-    np.save(f"{out_dir}/w_star.npy", w_star)
+    np.save( join(out_dir, "w_star.npy"), w_star )
 
     d_output, d_input = w_star.shape
 
@@ -123,15 +119,7 @@ if __name__ == "__main__":
         # calculate and save data covariances
         train_data = torch.flatten(train_dataset.data, start_dim=1).numpy()
         covariance = np.cov(train_data.T, train_dataset.targets.T)
-        cov_XX = covariance[:d_input,:d_input]
-        cov_Xy = covariance[:d_input,-d_output:]
-        cov_yy = covariance[-d_output:,-d_output:]
-
-        np.save( f"{out_dir}/covariance.npy", covariance )
-        np.save( f"{out_dir}/covariance_XX.npy", cov_XX )
-        np.save( f"{out_dir}/covariance_Xy.npy", cov_Xy )
-        np.save( f"{out_dir}/covariance_yy.npy", cov_yy )
-
+        np.save( join(out_dir, "covariance.npy"), covariance )
 
         '''
         train network
@@ -144,7 +132,7 @@ if __name__ == "__main__":
 
         optimizer = optim.SGD(model.parameters(), lr=lr, weight_decay=wd)
 
-        model.save(f"{out_dir}/model_init")
+        model.save( join(out_dir, "model_init") )
         print(model)
 
         train_loss = []
@@ -152,6 +140,8 @@ if __name__ == "__main__":
         hidden = [np.array([]) for _ in range(n_layers - 1)]
         model_weights = [np.array([]) for _ in range(n_layers)]
         saved_epochs = []
+        covariance_train = []
+        covariance_test = []
 
         for epoch in range(n_epochs + 1):
             # train (except on the first epoch)
@@ -163,19 +153,28 @@ if __name__ == "__main__":
             test_acc.append(acc)
             # collect statistics
             if epoch % n_skip == 0:
-                model.save(f"{out_dir}/model_trained")
+                model.save( join(out_dir, f"model_trained") )
                 
                 saved_epochs.append(epoch)
-                np.save(f"{out_dir}/saved_epochs.npy", np.array(saved_epochs))
-                np.save(f"{out_dir}/train_loss.npy", np.array(train_loss))
-                np.save(f"{out_dir}/test_loss.npy", np.array(test_acc))
+                np.save( join(out_dir, "saved_epochs.npy"), np.array(saved_epochs))
+                np.save( join(out_dir, "train_loss.npy"), np.array(train_loss))
+                np.save( join(out_dir, "test_loss.npy"), np.array(test_acc))
+
+                # input-input, input-output, output-output covariances from the model
+                train_inputs, train_outputs = evaluate(model, device, train_loader)
+                covariance_train.append( np.cov(train_inputs.T, train_outputs.T) )
+                np.save( join(out_dir, "covariance_train.npy"), np.array(covariance_train) )
+
+                test_inputs, test_outputs = evaluate(model, device, test_loader)
+                covariance_test.append( np.cov(test_inputs.T, test_outputs.T) )
+                np.save( join(out_dir, "covariance_test.npy"), np.array(covariance_test) )
                 
                 for l in range(n_layers - 1):
                     hidden[l] = append(hidden[l], hidden_[l])
-                    np.save( f"{out_dir}/hidden_{l+1}.npy", hidden[l] )
+                    np.save( join(out_dir, f"hidden_{l+1}.npy"), hidden[l] )
                 for l in range(n_layers):
                     model_weights[l] = append(model_weights[l], model_weights_[l])
-                    np.save( f"{out_dir}/weights_{l+1}.npy", model_weights[l] )
+                    np.save( join(out_dir, f"weights_{l+1}.npy"), model_weights[l] )
 
 
     # ==================================================
@@ -194,19 +193,22 @@ if __name__ == "__main__":
     if plotting:
         print("PLOTTING ...")
 
-        # re-load saved data
-        saved_epochs = np.load(f"{out_dir}/saved_epochs.npy")
-        train_loss = np.load(f"{out_dir}/train_loss.npy")
-        test_loss = np.load(f"{out_dir}/test_loss.npy")
-        hidden = [np.load( f"{out_dir}/hidden_{l+1}.npy" ) for l in range(n_layers - 1)]
-        model_weights = [np.load( f"{out_dir}/weights_{l+1}.npy" ) for l in range(n_layers)]
-        w_star = np.load(f"{out_dir}/w_star.npy")
-        covariance = np.load( f"{out_dir}/covariance.npy" )
-        cov_XX = np.load( f"{out_dir}/covariance_XX.npy" )
-        cov_Xy = np.load( f"{out_dir}/covariance_Xy.npy" )
-        cov_yy = np.load( f"{out_dir}/covariance_yy.npy" )
+        saved_epochs, train_loss, test_loss, hidden, model_weights, \
+        covariance, covariance_train, covariance_test, \
+        weights_norm, (Us, Ss, Vs), projs = load_data(out_dir)
 
-        weights_norm, (Us, Ss, Vs), projs = load_statistics(out_dir)
+        w_star = np.load( join(out_dir, "w_star.npy") )
+        d_output, d_input = w_star.shape
+
+        cov_XX = covariance[:d_input,:d_input]
+        cov_Xy = covariance[:d_input,-d_output:]
+        cov_yy = covariance[-d_output:,-d_output:]
+        cov_XX_train = covariance_train[:,:d_input,:d_input]
+        cov_Xy_train = covariance_train[:,:d_input,-d_output:]
+        cov_yy_train = covariance_train[:,-d_output:,-d_output:]
+        cov_XX_test = covariance_test[:,:d_input,:d_input]
+        cov_Xy_test = covariance_test[:,:d_input,-d_output:]
+        cov_yy_test = covariance_test[:,-d_output:,-d_output:]
 
         # calculate the product of all matrices
         W_product = model_weights[0]
@@ -216,20 +218,20 @@ if __name__ == "__main__":
 
         title = f"init {scaling}; L={n_layers}; N={N:04d}; drop {drop_l} wp {drop_p:.2f}"
 
-        plot_covariance (covariance, IO=True, d_output=d_output, out_dir=out_dir, title=title, W_product=W_product)
+        plot_covariance (covariance, IO=True, d_output=d_output, out_dir=out_dir, title=title, W_product=cov_Xy_test)
         
         plot_alignment_layers (projs, d_output=d_output, epochs=saved_epochs, out_dir=out_dir, title=title)
 
         plot_alignment_wstar (model_weights, w_star, Us,Vs, epochs=saved_epochs, out_dir=out_dir, title=title)
 
-        plot_singular_values (Ss, epochs=saved_epochs, out_dir=out_dir, title=title)#, xlim=[0,100*N//16])
+        plot_singular_values (Ss, epochs=saved_epochs, out_dir=out_dir, title=title, xlim=[0,100])
 
         try:
             # new version where testing is done only every `n_skip` epochs
             # -- throws an exception if testing done every epoch
             plot_loss_accuracy (train_loss, test_loss, test_epochs=saved_epochs, out_dir=out_dir, title=title) #, xlim=[0,20])
         except:
-            plot_loss_accuracy (train_loss, test_loss, out_dir=out_dir, title=title) #, xlim=[0,20])
+            plot_loss_accuracy (train_loss, test_loss, out_dir=out_dir, title=title) #, xlim=[0,20]) 
 
         plot_weights (model_weights, weights_norm, epochs=saved_epochs, out_dir=out_dir, title=title)
 
