@@ -224,7 +224,7 @@ if __name__ == "__main__":
 
         plot_alignment_wstar (model_weights, w_star, Us,Vs, epochs=saved_epochs, out_dir=out_dir, title=title)
 
-        plot_singular_values (Ss, epochs=saved_epochs, out_dir=out_dir, title=title, xlim=[0,100])
+        plot_singular_values (Ss, epochs=saved_epochs, out_dir=out_dir, title=title)#, ext="svg", xlim=[0,100]) #, inset=[0,100]
 
         try:
             # new version where testing is done only every `n_skip` epochs

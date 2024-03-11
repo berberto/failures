@@ -32,7 +32,7 @@ def plot_alignment_layers (projs, d_output=10, epochs=None, out_dir='.', title='
             im = ax.imshow(np.abs(proj[frame, :d_output+4, :d_output+4]), **kwargs)#; plt.colorbar(im, ax=ax)
 
     plot_frame(len(projs[0])-1)
-    fig.savefig(join(out_dir, 'plot_alignment_layers_final.png'), bbox_inches="tight")
+    fig.savefig(join(out_dir, 'plot_alignment_layers_final.svg'), bbox_inches="tight")
 
     duration = 10 # in s
     n_frames = 50 # total number of frames to plot
@@ -115,7 +115,7 @@ def plot_alignment_wstar (model_weights, w_star, Us,Vs, epochs=None, out_dir='.'
 
 
 def plot_singular_values (Ss, epochs=None, out_dir='.', title='',
-    xlim=None):
+    xlim=None, inset=None, ext="png"):
 
     n_layers = len(Ss)
     n_snapshots = len(Ss[0])
@@ -132,7 +132,7 @@ def plot_singular_values (Ss, epochs=None, out_dir='.', title='',
     for l, S in enumerate(Ss):
         ax.plot(epochs, PR(S), label=f"{l+1}")
     ax.legend(loc="best", title="layer")
-    fig.savefig(join(out_dir, 'plot_s-values_PR.png'), bbox_inches="tight")
+    fig.savefig(join(out_dir, f'plot_s-values_PR.{ext}'), bbox_inches="tight")
     plt.close(fig)
 
     # ALL SINGULAR VALUES
@@ -142,14 +142,34 @@ def plot_singular_values (Ss, epochs=None, out_dir='.', title='',
     # fig.suptitle(title)
     for l, S in enumerate(Ss):
         ax = axs[l]
+        # ax_in.set_xlim([])
+        # ax_in.set_xticks([])
+        # ax_in.set_xticklabels(["0","10","20"], fontsize=8)
+        # # ax_in.set_xticks(0,10,20)
+        # ax_in.set_xticklabels(["0","10","20"], fontsize=8)
         if xlim is not None:
             ax.set_xlim(xlim)
         ax.set_title(rf"$W_{l+1}$")
         ax.set_xlabel('epoch')
         ax.set_ylabel('singular value')
-        for s in S.T:
-            ax.plot(epochs, s)
-    fig.savefig(join(out_dir, 'plot_s-values.png'), bbox_inches="tight")
+
+        # if l == 0:
+        #     ax.set_ylim([0,2.2])
+        # elif l == 1:
+        #     ax.set_ylim([0.25, 1.5])
+
+        for i, s in enumerate(S.T):
+            ax.plot(epochs, s, c=f"C{i}")#, ls="--")
+        if inset is not None:
+            ax_in = ax.inset_axes([.5, .5, .45, .45])
+            try:
+                ax_in.set_xlim(inset)
+            except:
+                ax_in.set_xlim([0,20])
+            for i, s in enumerate(S.T):
+                ax_in.plot(epochs, s, c=f"C{i}")
+
+    fig.savefig(join(out_dir, f'plot_s-values.{ext}'), bbox_inches="tight")
     plt.close(fig)
 
     # SINGULAR VALUES DISTRIBUTION
@@ -167,7 +187,7 @@ def plot_singular_values (Ss, epochs=None, out_dir='.', title='',
         ax.hist(S[0], density=True, bins=30, label="initial", alpha=0.4)
         ax.hist(S[-1], density=True, bins=30, label="trained", alpha=0.4)
         ax.legend(loc="best")
-    fig.savefig(join(out_dir, 'plot_eval_distr.png'), bbox_inches="tight")
+    fig.savefig(join(out_dir, f'plot_eval_distr.{ext}'), bbox_inches="tight")
     plt.close(fig)
 
 
