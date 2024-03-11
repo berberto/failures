@@ -91,6 +91,71 @@ class Net(nn.Module):
         return len(self._modules.items())
 
 
+
+class RNN (Net):
+
+    def __init__(self, d_input, d_output, d_hidden=[100],
+            output_activation = None, # for classification vs regression tasks
+            drop_l=None,
+            nonlinearity=F.tanh,
+            layer_type=nn.Linear,
+            bias=False,
+        ):
+
+        super(RNN, self).__init__()
+
+        self.i2h = nn.Linear (d_input, d_hidden, bias=False)
+        self.h2h = layer_type (d_hidden, d_hidden, bias=bias)
+        self.h2o = nn.Linear (d_hidden, d_output, bias=bias)
+
+        if activation in [None, 'linear']:
+            self.phi = lambda x: x
+        elif activation == 'relu':
+            self.phi = lambda x: F.relu(x)
+        elif activation == 'sigmoid':
+            self.phi = lambda x: F.sigmoid(x)
+        else:
+            raise NotImplementedError("activation function " + \
+                            f"\"{activation}\" not implemented")
+
+        if output_activation in [None, 'linear']:
+            self.out_phi = lambda x: x
+        elif output_activation == 'softmax':
+            self.out_phi = lambda x: F.softmax(x, dim=-1)
+        else:
+            raise NotImplementedError("output activation function " + \
+                            f"\"{output_activation}\" not implemented")
+
+        # convert drop_l into a list of strings
+        if drop_l == None:
+            drop_l = ""
+        elif drop_l == "all":
+            drop_l = ",".join([str(i+1) for i in range(self.n_layers)])
+        drop_l = drop_l.split(",")
+
+        self.init_weights (scaling)
+
+    def forward (self, x, h0):
+        '''
+        x
+        ---
+        seq_length, batch_size, input_num_units
+        or
+        seq_length, input_num_units
+        '''
+        ht = h0
+        hidden = ht
+        output = torch.Tensor([])
+        for t, xt in enumerate(x):
+            z = self.i2h (xt)
+            ht = self.h2h (ht)
+            ht = self.phi (ht)
+            output = torch.cat([output, self.h2o(ht)], dim=0)
+            hidden = torch.cat([hidden, ht], dim=0)
+
+        return hidden, output
+
+
 class DeepNet(Net):
     '''
     General deep feed forward class
