@@ -91,71 +91,6 @@ class Net(nn.Module):
         return len(self._modules.items())
 
 
-class LinearNet2L(Net):
-    '''
-    Base class for feed-forward neural network models with linear layers by default,
-    and with the optional argument `layer_type` to select alternative types of layers
-    for specific layers (indicated in a string through `drop_l` optional argument).
-    '''
-    def __init__(self, d_input, d_output=1, d_hidden=100, layer_type=nn.Linear, scaling="sqrt", drop_l=None, bias=False):
-        super(LinearNet2L, self).__init__()
-        
-        l1_type = nn.Linear
-        l2_type = nn.Linear
-        if drop_l is not None:
-            if "1" in drop_l:
-                l1_type = layer_type
-            if "2" in drop_l:
-                l2_type = layer_type
-
-        self.fc1 = l1_type(d_input, d_hidden, bias=bias)
-        self.fc2 = l2_type(d_hidden, d_output, bias=bias)
-
-        self.init_weights (scaling)
-
-    def forward(self, x, hidden_layer=False):
-        h1 = self.fc1(x)
-        out = self.fc2(h1)
-        if hidden_layer:
-            return out, [h1]
-        else:
-            return out
-
-class LinearNet3L(Net):
-    '''
-    Base class for feed-forward neural network models with linear layers by default,
-    and with the optional argument `layer_type` to select alternative types of layers
-    for specific layers (indicated in a string through `drop_l` optional argument).
-    '''
-    def __init__(self, d_input, d_output=1, d_hidden=100, layer_type=nn.Linear, scaling="sqrt", drop_l=None, bias=False):
-        super(LinearNet3L, self).__init__()
-        
-        l1_type = nn.Linear
-        l2_type = nn.Linear
-        l3_type = nn.Linear
-        if drop_l is not None:
-            if "1" in drop_l:
-                l1_type = layer_type
-            if "2" in drop_l:
-                l2_type = layer_type
-            if "3" in drop_l:
-                l3_type = layer_type
-
-        self.fc1 = l1_type(d_input, d_hidden, bias=bias)
-        self.fc2 = l2_type(d_hidden, d_hidden, bias=bias)
-        self.fc3 = l3_type(d_hidden, d_output, bias=bias)
-
-        self.init_weights (scaling)
-
-    def forward(self, x, hidden_layer=False):
-        h1 = self.fc1(x)
-        h2 = self.fc2(h1)
-        out = self.fc3(h2)
-        if hidden_layer:
-            return out, [h1,h2]
-        else:
-            return out
-
 class DeepNet(Net):
     '''
     General deep feed forward class
@@ -225,60 +160,6 @@ class DeepNet(Net):
             return x, h
         else:
             return x
-
-
-class ClassifierNet2L (LinearNet2L):
-    '''
-    Feed forward neural network with 2 fully connected hidden layers,
-    relu non-linearity and softmax output for classification tasks.
-    Adds the ReLU non-linearity to the layers specified as in the 
-    LinearNet2L base class.
-    '''
-    def forward (self, x, hidden_layer=False):
-        x = torch.flatten(x, start_dim=1)
-        h1 = F.relu(self.fc1(x))
-        # out = F.softmax(self.fc2(h1), dim=1)
-        out = self.fc2(h1)
-        if hidden_layer:
-            return out, [h1]
-        else:
-            return out
-
-class ClassifierNet3L (LinearNet3L):
-    '''
-    Feed forward neural network with 3 fully connected hidden layers,
-    relu non-linearity and softmax output for classification tasks.
-    Adds the ReLU non-linearity to the layers specified as in the 
-    LinearNet3L base class.
-    '''
-    def forward (self, x, hidden_layer=False):
-        x = torch.flatten(x, start_dim=1)
-        h1 = F.relu(self.fc1(x))
-        h2 = F.relu(self.fc2(h1))
-        # out = F.softmax(self.fc3(h2), dim=1)
-        out = self.fc3(h2)
-        if hidden_layer:
-            return out, [h1,h2]
-        else:
-            return out
-
-class ClassifierNet3L (LinearNet3L):
-    '''
-    Feed forward neural network with 3 fully connected hidden layers,
-    relu non-linearity and softmax output for classification tasks.
-    Adds the ReLU non-linearity to the layers specified as in the 
-    LinearNet3L base class.
-    '''
-    def forward (self, x, hidden_layer=False):
-        x = torch.flatten(x, start_dim=1)
-        h1 = F.relu(self.fc1(x))
-        h2 = F.relu(self.fc2(h1))
-        # out = F.softmax(self.fc3(h2), dim=1)
-        out = self.fc3(h2)
-        if hidden_layer:
-            return out, [h1,h2]
-        else:
-            return out
 
 
 def evaluate (model, device, loader):
