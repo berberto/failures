@@ -64,11 +64,11 @@ def load_data (out_dir):
     covariance_train = np.load( join(out_dir, "covariance_train.npy") )
     covariance_test = np.load( join(out_dir, "covariance_test.npy") )
 
-    weights_norm, (Us, Ss, Vs), projs = load_statistics(out_dir)
+    # weights_norm, (Us, Ss, Vs), projs = load_statistics(out_dir)
 
     return saved_epochs, train_loss, test_loss, hidden, model_weights, \
-            covariance, covariance_train, covariance_test, \
-            weights_norm, (Us, Ss, Vs), projs
+            covariance, covariance_train, covariance_test #, \
+            # weights_norm, (Us, Ss, Vs), projs
 
 
 def diagonal_matrix (S, n: int, m: int):

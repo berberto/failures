@@ -8,11 +8,11 @@ parser.add_argument('--run', dest='run', action='store_true', default=False, hel
 args = parser.parse_args()
 run = args.run
 
-s_vals = ["sqrt", "const", "lin", "const+", "lin+", "sqrt,lin", "sqrt,lin+", "sqrt,const", "sqrt,const+"] # initial parameters scaling
+s_vals = ["sqrt", "const"] # ["sqrt", "const", "lin", "const+", "lin+", "sqrt,lin", "sqrt,lin+", "sqrt,const", "sqrt,const+"] # initial parameters scaling
 
 a_vals = ["linear", "relu"] # initial parameters scaling
 
-N_vals = [16, 64, 256] # number of units per hidden layer
+N_vals = [128, 512, 2048] # number of units per hidden layer
 
 l_vals = [2] # [2,3,5,10] # number of layers
 
@@ -20,7 +20,7 @@ d_vals = [4] # [1,2] # output dimension
 
 p_vals = [0.5] # weight failure probability
 
-f_vals = ["2"] # ["all","2"]
+f_vals = ["all","2"]
 
 with open("pars_LR.txt", "w") as file:
     for s in s_vals:

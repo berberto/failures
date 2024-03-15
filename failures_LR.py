@@ -19,7 +19,7 @@ from training_utils import append
 from data import LinearRegressionDataset, SemanticsDataset
 
 from path_utils import get_path
-from stats_utils import run_statistics, load_statistics, load_data #, diagonal_matrix
+from stats_utils import run_statistics, load_statistics, load_data, load_weights #, diagonal_matrix
 from plot_utils import (plot_alignment_layers, plot_alignment_wstar,
                         plot_singular_values, plot_loss_accuracy,
                         plot_weights, plot_hidden_units,
@@ -31,6 +31,13 @@ if __name__ == "__main__":
     training = True
     analysis = True
     plotting = True
+
+    n_epochs = 500
+    n_skip = 1 # epochs to skip when saving data
+    sub_dir = "shortrun"
+    # n_epochs = 500000
+    # n_skip = 500 # epochs to skip when saving data
+    # sub_dir = "longrun"
 
     # ==================================================
     #   SETUP PARAMETERS
@@ -55,13 +62,6 @@ if __name__ == "__main__":
             pass
     
     base_dir = "outputs_AS"
-
-    # n_epochs = 500
-    # n_skip = 1 # epochs to skip when saving data
-    # sub_dir = "shortrun"
-    n_epochs = 500000
-    n_skip = 500 # epochs to skip when saving data
-    sub_dir = "longrun"
 
     out_dir = get_path(base_dir, n_layers, activation,
                        scaling, N, drop_l, drop_p,
@@ -147,6 +147,7 @@ if __name__ == "__main__":
             # train (except on the first epoch)
             loss = train(model, device, train_loader, optimizer, epoch, log_interval=1000)
             # test
+            print(f"Epoch {epoch}:", end=" ")
             acc, model_weights_, hidden_ = test(model, device, test_loader)
 
             train_loss.append(loss)
@@ -180,22 +181,48 @@ if __name__ == "__main__":
     # ==================================================
     #      ANALYSIS
 
-    if analysis:
+    # if analysis:
 
-        print("STATISTICS ...")
+    #     print("STATISTICS ...")
         
-        run_statistics(out_dir)
+    #     run_statistics(out_dir)
 
 
     # ==================================================
     #      PLOTS
     
     if plotting:
+
+
+        weights_list = load_weights( out_dir )
+
+        weights_norm = [np.linalg.norm(W, axis=(-1,-2)) for W in weights_list]
+        with open(f"{out_dir}/weights_norm.pkl", "wb") as f:
+            pickle.dump(weights_norm, f)
+
+        # singular value decomposition of W's for all snapshots
+        Us = []
+        Ss = []
+        Vs = []
+        for l, W in enumerate(weights_list):
+            # calculate the singular value decomposition of the weights
+            # if len(W.shape) == 2:
+            #     n, d = W.shape
+            #     W = np.reshape(W, (n, 1, d))
+            print(f"Layer {l+1}, {W.shape}")
+            U, S, Vh = np.linalg.svd(W)
+            Us.append(U)
+            Ss.append(S)
+            Vs.append(Vh)
+
         print("PLOTTING ...")
 
+        # saved_epochs, train_loss, test_loss, hidden, model_weights, \
+        # covariance, covariance_train, covariance_test, \
+        # weights_norm, (Us, Ss, Vs), projs = load_data(out_dir)
+
         saved_epochs, train_loss, test_loss, hidden, model_weights, \
-        covariance, covariance_train, covariance_test, \
-        weights_norm, (Us, Ss, Vs), projs = load_data(out_dir)
+        covariance, covariance_train, covariance_test = load_data(out_dir)
 
         w_star = np.load( join(out_dir, "w_star.npy") )
         d_output, d_input = w_star.shape
@@ -220,7 +247,7 @@ if __name__ == "__main__":
 
         plot_covariance (covariance, IO=True, d_output=d_output, out_dir=out_dir, title=title, W_product=cov_Xy_test)
         
-        plot_alignment_layers (projs, d_output=d_output, epochs=saved_epochs, out_dir=out_dir, title=title)
+        # plot_alignment_layers (projs, d_output=d_output, epochs=saved_epochs, out_dir=out_dir, title=title)
 
         plot_alignment_wstar (model_weights, w_star, Us,Vs, epochs=saved_epochs, out_dir=out_dir, title=title)
 

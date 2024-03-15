@@ -2,11 +2,13 @@
 
 # SBATCH --partition=cpu
 # SBATCH -n 1
-#SBATCH --partition=gpu
+#SBATCH --partition=fast
 #SBATCH --gres=gpu:1
-#SBATCH --time=5-00:00:00
-#SBATCH --array=1-96
+#SBATCH --time=3:00:00
+#SBATCH --array=1-23
 #SBATCH --job-name=LRsem
+#SBATCH --output=.logs/LRsem_%A_%a.out
+#SBATCH --error=.logs/LRsem_%A_%a.err
 #SBATCH --mem=32G
 
 module load cuda/11.6
