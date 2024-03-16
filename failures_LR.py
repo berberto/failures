@@ -32,11 +32,11 @@ if __name__ == "__main__":
     analysis = True
     plotting = True
 
-    n_epochs = 500
-    n_skip = 1 # epochs to skip when saving data
+    n_epochs = 1000
+    n_skip = 5 # epochs to skip when saving data
     sub_dir = "shortrun"
-    # n_epochs = 500000
-    # n_skip = 500 # epochs to skip when saving data
+    # n_epochs = 1000000
+    # n_skip = 2000 # epochs to skip when saving data
     # sub_dir = "longrun"
 
     # ==================================================
@@ -61,7 +61,7 @@ if __name__ == "__main__":
         except:
             pass
     
-    base_dir = "outputs_AS"
+    base_dir = "test_AS"
 
     out_dir = get_path(base_dir, n_layers, activation,
                        scaling, N, drop_l, drop_p,
@@ -81,7 +81,7 @@ if __name__ == "__main__":
     n_train = 10000
     n_test = 10000
 
-    lr = 1e-5
+    lr = 1e-3
 
     train_kwargs = {'batch_size': 1000}
     test_kwargs = {'batch_size': n_test}

@@ -5,10 +5,10 @@
 #SBATCH --partition=fast
 #SBATCH --gres=gpu:1
 #SBATCH --time=3:00:00
-#SBATCH --array=1-23
-#SBATCH --job-name=LRsem
-#SBATCH --output=.logs/LRsem_%A_%a.out
-#SBATCH --error=.logs/LRsem_%A_%a.err
+#SBATCH --array=1-24
+#SBATCH --job-name=e-3LRsem
+#SBATCH --output=.logs/e-3LRsem_%A_%a.out
+#SBATCH --error=.logs/e-3LRsem_%A_%a.err
 #SBATCH --mem=32G
 
 module load cuda/11.6
