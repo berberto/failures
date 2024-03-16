@@ -7,6 +7,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
 from matplotlib import pyplot as plt
+from collections import OrderedDict
 # import seaborn as sns
 # sns.set_style('whitegrid', {'font_scale': 2})
 import functools
@@ -86,6 +87,9 @@ class Net(nn.Module):
 
     def load(self, filename):
         self.load_state_dict(torch.load(filename, map_location=self.device))
+
+    def grad_dict (self):
+        return OrderedDict({name:pars.grad for name, pars in self.named_parameters()})
 
     def __len__ (self):
         return len(self._modules.items())
