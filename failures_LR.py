@@ -144,17 +144,23 @@ if __name__ == "__main__":
         covariance_test = []
 
         for epoch in range(n_epochs + 1):
-            # train (except on the first epoch)
-            loss = train(model, device, train_loader, optimizer, epoch, log_interval=1000)
-            # test
-            print(f"Epoch {epoch}:", end=" ")
-            acc, model_weights_, hidden_ = test(model, device, test_loader)
 
-            train_loss.append(loss)
-            test_acc.append(acc)
             # collect statistics
             if epoch % n_skip == 0:
                 model.save( join(out_dir, f"model_trained") )
+                
+                print(f"Ep {epoch}", end="\t")
+
+                # test model on training data
+                loss, _, _ = test(model, device, train_loader)
+                print(f'Train loss: {loss:.6e}', end="\t")
+                
+                # test model on test data
+                acc, model_weights_, hidden_ = test(model, device, test_loader)
+                print(f'Test loss: {acc:.6e}')
+
+                train_loss.append(loss)
+                test_acc.append(acc)
                 
                 saved_epochs.append(epoch)
                 np.save( join(out_dir, "saved_epochs.npy"), np.array(saved_epochs))
@@ -177,6 +183,8 @@ if __name__ == "__main__":
                     model_weights[l] = append(model_weights[l], model_weights_[l])
                     np.save( join(out_dir, f"weights_{l+1}.npy"), model_weights[l] )
 
+            # train
+            train(model, device, train_loader, optimizer, epoch, log_interval=1000)
 
     # ==================================================
     #      ANALYSIS
