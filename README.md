@@ -4,26 +4,61 @@ Implementation of feed-forward neural networks with synaptic failures (analogous
 
 ## Codes
 
-- `networks`
+- `networks`.
 	
-	- `LinearWeightDropout` class: fully-connected layer, with random weight-drop (*DropConnect*); a random mask is generated for each input data point.
+	Objects for constructing custom neural network modules.
+	
+	- `LinearWeightDropout`:
+	fully-connected layer, with random weight-drop (*DropConnect*); a random mask is generated for each input data point.
 
-	- `Net` class: a base class for networks. It inherits from the `torch.nn.Module` class, with the addition of methods for the custom initialisation of the weights.
+	- `Net`:
+	a base class for networks. It inherits from the `torch.nn.Module` class, with the addition of methods for the custom initialisation of the weights.
 
-	- `LinearNet2L` and `LinearNet3L` classes: feed-forward neural networks, with 2 and 3 layers, respectively. By default, all layers are standar linear ones (`torch.nn.Linear`), but the `__init__` method allows to manually specify whether one or more layers should be replaced by another type (`layer_type` keyword argument).
+	- `DeepNet`:
+	deep feed-forward networks.
+	It inherits from `Net`, and allows to stack different types of layers (fully-connected `torch.nn.Linear` by default), via keyword arguments 
 
-	- `ClassifierNet2L` and `ClassifierNet3L` classes: analogous to the ones above (from which they inherit), but adds ReLU non-linearity for hidden layer and a softmax layer for the output one, specifically for classification tasks.
+	- `RNN`:
+	vanilla recurrent neural network, with the option to replace recurrent layer with custom layer (e.g. `LinearWeightDropout`).
 
 - `training_utils`:
+
+	Routines for training and testing of neural networks.
 	
-	- `train_regressor` and `test_regressor` routines: train and test, respectively, a neural network model for a regression task
+	- `train_regressor`/`test_regressor`:
+	train and test a neural network model for a regression task
 
-	- `train_classifier` and `test_classifier` routines: train and test, respectively, a neural network model for a classification task
+	- `train_classifier`/`test_classifier`:
+	train and test a neural network model for a classification task
 
-- `data`:
+- `data`
 	
-	- `LinearRegressionDataset` class: a PyTorch `Dataset` defining output data to be linear in the input, with specified weights `w_star`; wrapping the data inside a `Dataset` class, allows one to use `DataLoader` to load batches of data. 
+	Definitions of datasets, inheriting from  `torch.utils.data.Dataset`; this allows one to use `DataLoader` to load batches of data (see `training_utils`)
+	
+	- `LinearRegressionDataset`:
+	linear target function, with specified weights `w_star`.
 
-- `failures_LR` and `failures_MNIST`: main script for linear regression with linear output and for MNIST handwritten digit classification, respectively. `pars_LR.py` and `pars_MNIST.py` generate the parameters to pass from command line in the right order.
+	- `SemanticsDataset`:
+	target function used in
+
+		> Saxe, A. M., McClelland, J. L. & Ganguli, S. A mathematical theory of semantic development in deep neural networks. *PNAS* **116**, 11537–11546 (2019).
+
+		This is a linear target function specified as a function of a well-defined input-output covariance matrix, and of an input-input covariance matrix which can be passed as optional argument (identity by default).
 
 - `stats_utils`: `run_statistics` function processing the weights, e.g. singular-value decomposition, and `load_statistics` to load the outputs.
+
+Main scripts
+
+- `failures_LR`:
+	
+	linear regression with linear target function.
+	`pars_LR.py` generates the parameters to pass from command line.
+	To run serially:
+	```bash
+	python pars_LR.py --run
+	```
+	To run in parallel (submit on SLURM system):
+	```bash
+	python pars_LR.py
+	sbatch submit_LR.slurm
+	```
