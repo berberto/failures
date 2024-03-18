@@ -32,12 +32,12 @@ if __name__ == "__main__":
     analysis = True
     plotting = True
 
-    n_epochs = 1000
-    n_skip = 5 # epochs to skip when saving data
-    sub_dir = "shortrun"
-    # n_epochs = 1000000
-    # n_skip = 2000 # epochs to skip when saving data
-    # sub_dir = "longrun"
+    # n_epochs = 1000
+    # n_skip = 5 # epochs to skip when saving data
+    # sub_dir = "shortrun"
+    n_epochs = 1000000
+    n_skip = 2000 # epochs to skip when saving data
+    sub_dir = "longrun"
 
     # ==================================================
     #   SETUP PARAMETERS

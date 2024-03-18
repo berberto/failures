@@ -2,9 +2,9 @@
 
 # SBATCH --partition=cpu
 # SBATCH -n 1
-#SBATCH --partition=fast
+#SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
-#SBATCH --time=3:00:00
+#SBATCH --time=5-00:00:00
 #SBATCH --array=1-24
 #SBATCH --job-name=e-3LRsem
 #SBATCH --output=.logs/e-3LRsem_%A_%a.out
