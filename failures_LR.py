@@ -201,14 +201,19 @@ if __name__ == "__main__":
     
     if plotting:
 
-
+        print("PRE-PROCESSING...")
+        print("\tLoading weights...", end=" ")
         weights_list = load_weights( out_dir )
+        print("Done")
 
+        print("\tCalculating weights norm...", end=" ")
         weights_norm = [np.linalg.norm(W, axis=(-1,-2)) for W in weights_list]
         with open(f"{out_dir}/weights_norm.pkl", "wb") as f:
             pickle.dump(weights_norm, f)
+        print("Done")
 
         # singular value decomposition of W's for all snapshots
+        print("\tCalculataing SVD of weights...")
         Us = []
         Ss = []
         Vs = []
@@ -217,20 +222,21 @@ if __name__ == "__main__":
             # if len(W.shape) == 2:
             #     n, d = W.shape
             #     W = np.reshape(W, (n, 1, d))
-            print(f"Layer {l+1}, {W.shape}")
+            print(f"\t\tLayer {l+1}, {W.shape}", end=" ")
             U, S, Vh = np.linalg.svd(W)
             Us.append(U)
             Ss.append(S)
             Vs.append(Vh)
-
-        print("PLOTTING ...")
+            print("Done")
 
         # saved_epochs, train_loss, test_loss, hidden, model_weights, \
         # covariance, covariance_train, covariance_test, \
         # weights_norm, (Us, Ss, Vs), projs = load_data(out_dir)
 
+        print("\tImporting saved data...", end=" ")
         saved_epochs, train_loss, test_loss, hidden, model_weights, \
         covariance, covariance_train, covariance_test = load_data(out_dir)
+        print("Done")
 
         w_star = np.load( join(out_dir, "w_star.npy") )
         d_output, d_input = w_star.shape
@@ -246,28 +252,46 @@ if __name__ == "__main__":
         cov_yy_test = covariance_test[:,-d_output:,-d_output:]
 
         # calculate the product of all matrices
+        print("\tCalculating product of all weights...", end=" ")
         W_product = model_weights[0]
         for l in range(1, n_layers):
             W_product = np.einsum('...ij,...jk->...ik', model_weights[l], W_product)
         np.save(f"{out_dir}/W_product.npy", W_product)
+        print("Done")
 
         title = f"init {scaling}; L={n_layers}; N={N:04d}; drop {drop_l} wp {drop_p:.2f}"
 
+        print("PLOTTING ...")
+
+        print("\tcovariance...", end=" ")
         plot_covariance (covariance, IO=True, d_output=d_output, out_dir=out_dir, title=title, W_product=cov_Xy_test)
+        print("Done")
         
+        # print("\taligment of adjacent layers...", end=" ")
         # plot_alignment_layers (projs, d_output=d_output, epochs=saved_epochs, out_dir=out_dir, title=title)
+        # print("Done")
 
+        print("\talignment of SV with true weights...", end=" ")
         plot_alignment_wstar (model_weights, w_star, Us,Vs, epochs=saved_epochs, out_dir=out_dir, title=title)
+        print("Done")
 
+        print("\tsingular values...", end=" ")
         plot_singular_values (Ss, epochs=saved_epochs, out_dir=out_dir, title=title)#, ext="svg", xlim=[0,100]) #, inset=[0,100]
+        print("Done")
 
+        print("\ttrain and test loss/accuracy...", end=" ")
         try:
             # new version where testing is done only every `n_skip` epochs
             # -- throws an exception if testing done every epoch
             plot_loss_accuracy (train_loss, test_loss, test_epochs=saved_epochs, out_dir=out_dir, title=title) #, xlim=[0,20])
         except:
             plot_loss_accuracy (train_loss, test_loss, out_dir=out_dir, title=title) #, xlim=[0,20]) 
+        print("Done")
 
+        print("\tweights statistics...", end=" ")
         plot_weights (model_weights, weights_norm, epochs=saved_epochs, out_dir=out_dir, title=title)
+        print("Done")
 
+        print("\thidden activity statistics...", end=" ")
         plot_hidden_units (hidden, epochs=saved_epochs, out_dir=out_dir, title=title)
+        print("Done")
