@@ -102,3 +102,54 @@ class LinearNetwork (object):
 	def loss (self):
 		_loss = None
 		return _loss
+
+
+if __name__ == "__main__":
+
+
+	from plot_utils import (plot_alignment_layers, plot_alignment_wstar,
+	                        plot_singular_values, plot_loss_accuracy,
+	                        plot_weights, plot_hidden_units,
+	                        plot_covariance)
+
+
+	N = 128
+	D = 7
+	d = 4
+
+	W = np.random.randn(N,D)/1000. # np.sqrt(D)
+	a = np.random.randn(d,N)/1000. # np.sqrt(N)
+	# w_star = np.random.randn(d,D)
+	# w_star = w_star / np.sqrt(np.sum(w_star**2, axis=1))[:, None]
+	w_star = np.array([
+	        [1,1,0,1,0,0,0],
+	        [1,1,0,0,1,0,0],
+	        [1,0,1,0,0,1,0],
+	        [1,0,1,0,0,0,1]
+	    ]).astype(float)
+
+	ln = LinearNetwork(
+			[W, a],
+			w_star,
+			q = 0.5,
+			eta=.001 * 10, # learning rate multiplied by the number of batches in the actual network simulation
+			out_dir="test_theory")
+	
+	n_steps = 1000
+	n_save = 100
+	
+	saved_epochs, weights_list = ln.simulate(n_steps, n_save=n_save)
+
+	print("Calculataing SVD of weights...")
+	Us = []
+	Ss = []
+	Vs = []
+	for l, W in enumerate(weights_list):
+	    print(f"\t\tLayer {l+1}, {W.shape}", end=" ")
+	    U, S, Vh = np.linalg.svd(W)
+	    Us.append(U)
+	    Ss.append(S)
+	    Vs.append(Vh)
+	    print("Done")
+
+	plot_singular_values (Ss, epochs=saved_epochs, out_dir=ln.out_dir)
