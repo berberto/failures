@@ -22,9 +22,8 @@ def train_regressor (model, device, train_loader, optimizer, epoch, log_interval
         # "sum" or "mean" refers to the sum/average over both batch AND dimension indices
         # e.g. for a batch size of 64 and 10 classes, it is a sum/average of 640 numbers
         loss = F.mse_loss(output, y, reduction="mean")
-        if epoch > 0:
-            loss.backward()
-            optimizer.step()
+        loss.backward()
+        optimizer.step()
         if verbose:
             if batch_idx % log_interval == 0:
                 print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6e}'.format(
@@ -50,7 +49,6 @@ def test_regressor (model, device, test_loader):
             # mean loss (MSE averaged over data points only)
             test_loss += F.mse_loss(output, y, reduction="mean").item() / len(test_loader)
 
-    print('Test set: Average loss: {:.6e}'.format(test_loss))
     with torch.no_grad():
         model_weights = []
         for name, pars in model.named_parameters():
