@@ -31,12 +31,14 @@ with open("pars_LR.txt", "w") as file:
                         # no drop-out => f = 0
                         _pars = f"{s}  {a}  {N}  {l}  {d}  0.00  0"
                         # file.write(_pars+"\n")
-                        if run:
-                            os.system("python failures_LR.py "+_pars)
+                        # if run:
+                        #     print(80*"=")
+                        #     os.system("python failures_LR.py "+_pars)
                         for p in p_vals:
                             for f in f_vals:
                             # if dropout, chose option for layers
                                 _pars = f"{s}  {a}  {N}  {l}  {d}  {p:.2f}  {f}"
                                 file.write(_pars+"\n")
                                 if run:
+                                    print(80*"=")
                                     os.system("python failures_LR.py "+_pars)
