@@ -395,12 +395,12 @@ def plot_covariance (cov, d_output=1, IO=False, W_product=None, out_dir='.', tit
         # fig.colorbar(im, ax=ax[:4].ravel().tolist())
         fig.savefig(join(out_dir, 'plot_input-output_covariance.png'), bbox_inches="tight")
 
-        duration = 10 # in s
-        n_frames = 100 # total number of frames to plot
-        dt = duration / n_frames * 1000. # in ms
-        frames = np.linspace(0,len(cov_Xy_l)-1,n_frames).astype(int) # indices of frames to plot
-        ani = FuncAnimation(fig, plot_frame,
-                            interval=dt,
-                            frames=frames,
-                            blit=False)
-    ani.save(join(out_dir, 'plot_input-output_covariance.gif'))
+        # duration = 10 # in s
+        # n_frames = 100 # total number of frames to plot
+        # dt = duration / n_frames * 1000. # in ms
+        # frames = np.linspace(0,len(cov_Xy_l)-1,n_frames).astype(int) # indices of frames to plot
+        # ani = FuncAnimation(fig, plot_frame,
+        #                     interval=dt,
+        #                     frames=frames,
+        #                     blit=False)
+        # ani.save(join(out_dir, 'plot_input-output_covariance.gif'))
