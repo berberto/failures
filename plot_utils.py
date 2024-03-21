@@ -3,6 +3,11 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from os.path import join
 plt.rcParams['font.size'] = 10
+title_bbox=dict(boxstyle='round', facecolor='lightgray', alpha=0.8)
+
+def title_label (ax, text):
+    ax.text(.99, .99, text, transform=ax.transAxes, fontsize=14,
+            verticalalignment='top', horizontalalignment='right', bbox=title_bbox)    
 
 def plot_alignment_layers (projs, d_output=10, epochs=None, out_dir='.', title=''):
 
@@ -22,17 +27,17 @@ def plot_alignment_layers (projs, d_output=10, epochs=None, out_dir='.', title='
     plt.subplots_adjust(hspace=0.5)
     def plot_frame (frame):
         plt.cla()
-        # fig.suptitle(title+f" -- epoch {frame*n_skip}")
+        fig.suptitle(title+f" -- epoch {frame*n_skip}")
         # plot alignment of intermediate layers
         for l, proj in enumerate(projs):
             ax = axs[l]
             ax.set_xlabel(r"$m$")
             ax.set_ylabel(r"$n$")
-            ax.set_title(rf"$|V^n_{l+2}\cdot U^m_{l+1}$|")
+            title_label(ax, rf"$|V^n_{l+2}\cdot U^m_{l+1}$|")
             im = ax.imshow(np.abs(proj[frame, :d_output+4, :d_output+4]), **kwargs)#; plt.colorbar(im, ax=ax)
 
     plot_frame(len(projs[0])-1)
-    fig.savefig(join(out_dir, 'plot_alignment_layers_final.svg'), bbox_inches="tight")
+    fig.savefig(join(out_dir, 'plot_alignment_layers_final.svg'), bbox_inches="tight", dpi=400)
 
     duration = 10 # in s
     n_frames = 50 # total number of frames to plot
@@ -50,7 +55,7 @@ def plot_alignment_layers (projs, d_output=10, epochs=None, out_dir='.', title='
         axs = [axs]
     plt.subplots_adjust(wspace=0.4)
     plt.subplots_adjust(hspace=0.5)
-    # fig.suptitle(title)
+    fig.suptitle(title)
     for l, proj in enumerate(projs):
         ax = axs[l]
         ax.set_ylim([0,1.1])
@@ -63,7 +68,7 @@ def plot_alignment_layers (projs, d_output=10, epochs=None, out_dir='.', title='
             for j in range(m):
                 c = "C0" if i == j else "C1"
                 ax.plot(epochs, np.abs(proj[:, i, j]), c=c)
-    fig.savefig(join(out_dir, 'plot_alignment_layers_epochs.png'), bbox_inches="tight")
+    fig.savefig(join(out_dir, 'plot_alignment_layers_epochs.png'), bbox_inches="tight", dpi=400)
 
 
 def plot_alignment_wstar (model_weights, w_star, Us,Vs, epochs=None, out_dir='.', title=''):
@@ -82,20 +87,20 @@ def plot_alignment_wstar (model_weights, w_star, Us,Vs, epochs=None, out_dir='.'
 
     # BIMODALITY
     fig, ax = plt.subplots(figsize=(3, 2))
-    # ax.set_title(title)
+    fig.suptitle(title)
     ax.set_xlabel(r'$W^{(L)}_j$')
     ax.set_ylabel(r'$(W^{(1)}\cdot w^*)_j$')
     W1_dot_wstar = np.dot(np.atleast_2d(w_star), model_weights[0][-1].T)
     for i in range(d_output):
         ax.scatter(model_weights[-1][-1,i], W1_dot_wstar[i], alpha=0.5, s=.1)
-    fig.savefig(join(out_dir, 'plot_scatter_W.png'), bbox_inches="tight")
+    fig.savefig(join(out_dir, 'plot_scatter_W.png'), bbox_inches="tight", dpi=400)
     plt.close(fig)
 
     # COS OF ANGLE BETWEEN PRINCIPAL COMPOMENTS AND WEIGHTS
     # (check low rank of W)
     fig, axs = plt.subplots(1,2,figsize=(6, 2))
     plt.subplots_adjust(wspace=0.4)
-    # fig.suptitle(title)
+    fig.suptitle(title)
     for ax in axs.ravel():
         ax.set_xlabel('epoch')
         ax.set_ylim([0,1.1])
@@ -110,12 +115,23 @@ def plot_alignment_wstar (model_weights, w_star, Us,Vs, epochs=None, out_dir='.'
             axs[i].plot(epochs, np.abs(overlaps[i])[:,j,j], c=f'C{j}')
             for k in range(j+1,m):
                 axs[i].plot(epochs, np.abs(overlaps[i])[:,j,k], c=f'C{j}', ls='--')
-    fig.savefig(join(out_dir, 'plot_alignment_wstar.png'), bbox_inches="tight")
+    fig.savefig(join(out_dir, 'plot_alignment_wstar.png'), bbox_inches="tight", dpi=400)
     plt.close(fig)
 
 
-def plot_singular_values (Ss, epochs=None, out_dir='.', title='',
+def plot_singular_values (Ss, epochs=None, theory=None, out_dir='.', title='',
     xlim=None, inset=None, ext="png"):
+
+    plot_theory = False
+    if theory is not None:
+        check_theory = isinstance(theory, list)
+        for l, (S, S_th) in enumerate(zip(Ss, theory)):
+            check_theory = check_theory * (S.shape == S_th.shape)
+        if check_theory:
+            Ss_th = theory
+            plot_theory = True
+        else:
+            raise ValueError("`theory` should be a list of numpy arrays with the same shape as `Ss`")
 
     n_layers = len(Ss)
     n_snapshots = len(Ss[0])
@@ -124,7 +140,7 @@ def plot_singular_values (Ss, epochs=None, out_dir='.', title='',
 
     # PARTICIPATION RATIO AND LARGEST SINGULAR VALUE
     fig, ax = plt.subplots(figsize=(3, 2))
-    # ax.set_title(title)
+    fig.suptitle(title)
     ax.set_xlabel('epoch')
     ax.set_ylabel('participation ratio / rank')
     ax.grid()
@@ -132,14 +148,14 @@ def plot_singular_values (Ss, epochs=None, out_dir='.', title='',
     for l, S in enumerate(Ss):
         ax.plot(epochs, PR(S), label=f"{l+1}")
     ax.legend(loc="best", title="layer")
-    fig.savefig(join(out_dir, f'plot_s-values_PR.{ext}'), bbox_inches="tight")
+    fig.savefig(join(out_dir, f'plot_s-values_PR.{ext}'), bbox_inches="tight", dpi=400)
     plt.close(fig)
 
     # ALL SINGULAR VALUES
     cols=n_layers
     fig, axs = plt.subplots(1, cols, figsize=(cols*3, 2))
     plt.subplots_adjust(wspace=0.4)
-    # fig.suptitle(title)
+    fig.suptitle(title)
     for l, S in enumerate(Ss):
         ax = axs[l]
         # ax_in.set_xlim([])
@@ -149,7 +165,7 @@ def plot_singular_values (Ss, epochs=None, out_dir='.', title='',
         # ax_in.set_xticklabels(["0","10","20"], fontsize=8)
         if xlim is not None:
             ax.set_xlim(xlim)
-        ax.set_title(rf"$W_{l+1}$")
+        title_label(ax, rf"$W_{l+1}$")
         ax.set_xlabel('epoch')
         ax.set_ylabel('singular value')
 
@@ -159,7 +175,7 @@ def plot_singular_values (Ss, epochs=None, out_dir='.', title='',
         #     ax.set_ylim([0.25, 1.5])
 
         for i, s in enumerate(S.T):
-            ax.plot(epochs, s, c=f"C{i}")#, ls="--")
+            ax.plot(epochs, s, c=f"C{i}", lw=2)#, ls="--")
         if inset is not None:
             ax_in = ax.inset_axes([.5, .5, .45, .45])
             try:
@@ -167,9 +183,14 @@ def plot_singular_values (Ss, epochs=None, out_dir='.', title='',
             except:
                 ax_in.set_xlim([0,20])
             for i, s in enumerate(S.T):
-                ax_in.plot(epochs, s, c=f"C{i}")
+                ax_in.plot(epochs, s, c=f"C{i}", lw=1)
+    if plot_theory:
+        for l, S in enumerate(Ss_th):
+            ax = axs[l]
+            for i, s in enumerate(S.T):
+                ax.plot(epochs, s, c=f"C{i}", ls="--", lw=3)
 
-    fig.savefig(join(out_dir, f'plot_s-values.{ext}'), bbox_inches="tight")
+    fig.savefig(join(out_dir, f'plot_s-values.{ext}'), bbox_inches="tight", dpi=400)
     plt.close(fig)
 
     # SINGULAR VALUES DISTRIBUTION
@@ -178,16 +199,16 @@ def plot_singular_values (Ss, epochs=None, out_dir='.', title='',
     plt.subplots_adjust(wspace=0.4)
     if cols == 1:
         axs = [axs]
-    # fig.suptitle(title)
+    fig.suptitle(title)
     for l, S in enumerate(Ss[:-1]):
         ax = axs[l]
-        ax.set_title(rf"$W_{l+1}$")
+        title_label(ax, rf"$W_{l+1}$")
         ax.set_xlabel('singular value')
         ax.set_ylabel('density')
         ax.hist(S[0], density=True, bins=30, label="initial", alpha=0.4)
         ax.hist(S[-1], density=True, bins=30, label="trained", alpha=0.4)
         ax.legend(loc="best")
-    fig.savefig(join(out_dir, f'plot_eval_distr.{ext}'), bbox_inches="tight")
+    fig.savefig(join(out_dir, f'plot_eval_distr.{ext}'), bbox_inches="tight", dpi=400)
     plt.close(fig)
 
 
@@ -209,9 +230,9 @@ def plot_loss_accuracy (train_loss, test_loss, train_acc=None, test_acc=None,
     # ax.plot(train_loss, label="train", c="C0")
     if xlim is not None:
         ax.set_xlim(xlim)
-    ax.scatter(test_epochs, test_loss, label="test", s=2, c="C1")
-    ax.plot(train_epochs, train_loss, label="train", c="C0")
-    # ax.set_title(title)
+    ax.scatter(test_epochs, test_loss, label="test", s=1, c="C1")
+    ax.plot(train_epochs, train_loss, label="train", c="C0", lw=1)
+    fig.suptitle(title)
     ax.grid()
     if xscale is not None:
         ax.set_xscale(xscale)
@@ -220,7 +241,7 @@ def plot_loss_accuracy (train_loss, test_loss, train_acc=None, test_acc=None,
     ax.set_ylabel('Train and test loss')
     ax.set_xlabel('epoch')
     ax.legend(loc="best")
-    fig.savefig(join(out_dir, 'plot_loss.png'), bbox_inches="tight")
+    fig.savefig(join(out_dir, 'plot_loss.png'), bbox_inches="tight", dpi=400)
     plt.close(fig)
 
     if (train_acc is not None) and (test_acc is not None):
@@ -230,12 +251,12 @@ def plot_loss_accuracy (train_loss, test_loss, train_acc=None, test_acc=None,
         # ax.plot(train_acc, label="train", c="C0")
         ax.scatter(test_epochs, test_acc, label="test", s=2, c="C1")
         ax.plot(train_epochs, train_acc, label="train", c="C0")
-        # ax.set_title(title)
+        fig.suptitle(title)
         ax.grid()
         ax.set_ylabel('Train and test accuracy')
         ax.set_xlabel('epoch')
         ax.legend(loc="best")
-        fig.savefig(join(out_dir, 'plot_accuracy.png'), bbox_inches="tight")
+        fig.savefig(join(out_dir, 'plot_accuracy.png'), bbox_inches="tight", dpi=400)
         plt.close(fig)
 
 
@@ -248,7 +269,7 @@ def plot_weights (model_weights, weights_norm, epochs=None, out_dir='.', title='
 
     # NORM OF THE WEIGHTS
     fig, ax = plt.subplots(figsize=(3, 2))
-    # ax.set_title(title)
+    fig.suptitle(title)
     ax.set_ylabel('L2 weight norm')
     ax.grid()
     ax.set_xscale('log')
@@ -259,12 +280,12 @@ def plot_weights (model_weights, weights_norm, epochs=None, out_dir='.', title='
     for i, (norm, c) in enumerate(zip(weights_norm, colors)):
         ax.plot(epochs, norm/norm[0], c=c, label=f'{i+1}: {norm[0]:.2f}')
     ax.legend(loc='best', title="layer: init value")
-    fig.savefig(join(out_dir, 'plot_weights_norm.png'), bbox_inches="tight")
+    fig.savefig(join(out_dir, 'plot_weights_norm.png'), bbox_inches="tight", dpi=400)
     plt.close(fig)
 
     # HISTOGRAM OF THE WEIGHTS
     fig, ax = plt.subplots(figsize=(3, 2))
-    # ax.set_title(title)
+    fig.suptitle(title)
     ax.set_xlabel('L2 weight norm (trained)')
     ax.set_ylabel('density')
     N = np.max([m.shape[1] for m in model_weights])
@@ -272,7 +293,7 @@ def plot_weights (model_weights, weights_norm, epochs=None, out_dir='.', title='
     for l, W in enumerate(model_weights):
         ax.hist(W[-1].ravel(), density=True, bins=100, label=f"W_{l+1}", alpha=0.3)
     ax.legend(loc="best")
-    fig.savefig(join(out_dir, 'plot_weights_histogram.png'), bbox_inches="tight")
+    fig.savefig(join(out_dir, 'plot_weights_histogram.png'), bbox_inches="tight", dpi=400)
     plt.close(fig)
 
 
@@ -285,25 +306,25 @@ def plot_hidden_units (hidden, epochs=None, out_dir='.', title=''):
 
     # VARIANCE OF THE HIDDEN LAYER
     fig, ax = plt.subplots(figsize=(3, 2))
-    # ax.set_title(title)
+    fig.suptitle(title)
     ax.set_ylabel('Hidden layer norm')
     ax.set_xlabel('epoch')
     ax.grid()
     for l, h in enumerate(hidden):
         ax.plot(epochs, np.linalg.norm(h, axis=1), label=f"X_{l+1}")
     ax.legend(loc="best", title="hidden layer")
-    fig.savefig(join(out_dir, 'plot_hidden_layer_norm.png'), bbox_inches="tight")
+    fig.savefig(join(out_dir, 'plot_hidden_layer_norm.png'), bbox_inches="tight", dpi=400)
     plt.close(fig)
 
     # HISTOGRAM OF THE HIDDEN LAYER(S)
     fig, ax = plt.subplots(figsize=(3, 2))
-    # ax.set_title(title)
+    fig.suptitle(title)
     ax.set_xlabel('Hidden layer activity')
     ax.set_ylabel('density')
     for i, h in enumerate(hidden):
         ax.hist(h[-1], density=True, bins="sqrt", label=f"X_{l+1}", alpha=0.3)
     ax.legend(loc="best", title="hidden layer")
-    fig.savefig(join(out_dir, 'plot_hidden_layer_histogram.png'), bbox_inches="tight")
+    fig.savefig(join(out_dir, 'plot_hidden_layer_histogram.png'), bbox_inches="tight", dpi=400)
     plt.close(fig)
 
 
@@ -340,7 +361,7 @@ def plot_covariance (cov, d_output=1, IO=False, W_product=None, out_dir='.', tit
     axins.set_ylim([0,1])
     _n = 20 # min(d_output + 2, len(cov_XX))
     axins.plot( np.sqrt(S_sorted[:_n]) / len(cov_XX) )
-    fig.savefig(join(out_dir, 'plot_input_covariance.png'), bbox_inches="tight")
+    fig.savefig(join(out_dir, 'plot_input_covariance.png'), bbox_inches="tight", dpi=400)
     plt.close(fig)
 
 
@@ -365,35 +386,35 @@ def plot_covariance (cov, d_output=1, IO=False, W_product=None, out_dir='.', tit
                 a.clear()
             # plot the input-output covariance matrix of the (training) data
             ax[0].set_ylabel("Training data")
-            im = ax[0].imshow(cov_Xy, **kwargs); ax[0].set_title(r"$\Sigma^{xy}$")
+            im = ax[0].imshow(cov_Xy, **kwargs); title_label(ax[0], r"$\Sigma^{xy}$")
             # plot the left singular vectors
-            ax[1].imshow(-U[:,:d_output], **kwargs); ax[1].set_title(r"$U$")
+            ax[1].imshow(-U[:,:d_output], **kwargs); title_label(ax[1], r"$U$")
             # plot the diagonal singular-value matrix
-            ax[2].imshow(np.diag(S), aspect="equal"); ax[2].set_title(r"$S$")
+            ax[2].imshow(np.diag(S), aspect="equal"); title_label(ax[2], r"$S$")
             for i,s in enumerate(S):
                 ax[2].text(i,i,f"{s:.2f}", c='r',verticalalignment="center",horizontalalignment="center")
             # plot the right signular vectors
-            ax[3].imshow(-Vh, **kwargs); ax[3].set_title(r"$V^T$")
+            ax[3].imshow(-Vh, **kwargs); title_label(ax[3], r"$V^T$")
 
             if W_product is not None:
                 for a in ax[4:]:
                     a.clear()
                 # plot the input-output covariance matrix from the model
                 ax[4].set_ylabel("Model")
-                im = ax[4].imshow(cov_Xy_l[frame], **kwargs); ax[4].set_title(r"$\Sigma^{xy}$")
+                im = ax[4].imshow(cov_Xy_l[frame], **kwargs); title_label(ax[4], r"$\Sigma^{xy}$")
                 # plot the left singular vectors
-                ax[5].imshow(-U_l[frame,:,:d_output], **kwargs); ax[5].set_title(r"$U$")
+                ax[5].imshow(-U_l[frame,:,:d_output], **kwargs); title_label(ax[5], r"$U$")
                 # plot the diagonal singular-value matrix
-                ax[6].imshow(np.diag(S_l[frame]), aspect="equal"); ax[6].set_title(r"$S$")
+                ax[6].imshow(np.diag(S_l[frame]), aspect="equal"); title_label(ax[6], r"$S$")
                 for i,s in enumerate(S_l[frame]):
                     ax[6].text(i,i,f"{s:.2f}", c='r',verticalalignment="center",horizontalalignment="center")
                 # plot the right signular vectors
-                ax[7].imshow(-Vh_l[frame], **kwargs); ax[7].set_title(r"$V^T$")
+                ax[7].imshow(-Vh_l[frame], **kwargs); title_label(ax[7], r"$V^T$")
 
         im = plot_frame(-1)
         # fig.colorbar(im, ax=ax[4:].ravel().tolist())
         # fig.colorbar(im, ax=ax[:4].ravel().tolist())
-        fig.savefig(join(out_dir, 'plot_input-output_covariance.png'), bbox_inches="tight")
+        fig.savefig(join(out_dir, 'plot_input-output_covariance.png'), bbox_inches="tight", dpi=400)
 
         # duration = 10 # in s
         # n_frames = 100 # total number of frames to plot
