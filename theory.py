@@ -27,10 +27,8 @@ class LinearNetwork (object):
 		if cov is None:
 			cov = np.eye(self.d_input)
 		self.cov = cov
-		print("Input-input covariance matrix\n", self.cov)
 
 		self._M = self.cov + np.diagflat( np.diagonal(self.cov) )/self.q
-		print("Modified covariance matrix -- entering the \"regularization\" term\n", self._M)
 
 	def save (self, filename):
 		with open(join(self.out_dir, filename), "wb") as f:
@@ -74,28 +72,27 @@ class LinearNetwork (object):
 		# weight update
 		self.Ws[0] = W + self.eta * ( _del_W - _reg_W )
 		self.Ws[1] = a + self.eta * ( _del_a - _reg_a )
-		self.Ws[0] = W + self.eta * _del_W
-		self.Ws[1] = a + self.eta * _del_a
 
 
-	def simulate (self, n_steps, W0s=None, n_save=1):
+	def simulate (self, n_steps, W0s=None, n_save=1, saved_steps=None):
 
 		if W0s is None:
 			W0s = self.W0s.copy()
 		self.Ws = W0s
 
-		n_save = min( n_steps, n_save )
-		n_save = np.linspace(0, n_steps, n_save+1).astype(int)
+		if saved_steps is None:
+			n_save = min( n_steps, n_save )
+			saved_steps = np.linspace(0, n_steps, n_save+1).astype(int)
 
 		_weights = [np.array([]) for _ in range(len(self.Ws))]
 		for n in range(n_steps+1):
-			if n in n_save:
+			if n in saved_steps:
 				for l, W in enumerate(self.Ws):
 				    _weights[l] = append(_weights[l], W)
-				    np.save( join(self.out_dir, f"weights_theory_{l+1}.npy"), _weights[l] )
+				    np.save( join(self.out_dir, f"weights_{l+1}.npy"), _weights[l] )
 			self.step(n)
 
-		return n_save, _weights
+		return saved_steps, _weights
 
 
 	@property
@@ -117,8 +114,10 @@ if __name__ == "__main__":
 	D = 7
 	d = 4
 
-	W = np.random.randn(N,D)/1000. # np.sqrt(D)
-	a = np.random.randn(d,N)/1000. # np.sqrt(N)
+	W = np.random.randn(N,D)/np.sqrt(D)
+	# W = np.random.randn(N,D)/1000.
+	a = np.random.randn(d,N)/np.sqrt(N)
+	# a = np.random.randn(d,N)/1000.
 	# w_star = np.random.randn(d,D)
 	# w_star = w_star / np.sqrt(np.sum(w_star**2, axis=1))[:, None]
 	w_star = np.array([
