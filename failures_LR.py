@@ -25,12 +25,15 @@ from plot_utils import (plot_alignment_layers, plot_alignment_wstar,
                         plot_weights, plot_hidden_units,
                         plot_covariance)
 
+from theory import LinearNetwork
+
 
 if __name__ == "__main__":
 
     training = True
     analysis = True
     plotting = True
+    theory = True
 
     # n_epochs = 1000
     # n_skip = 5 # epochs to skip when saving data
@@ -259,7 +262,43 @@ if __name__ == "__main__":
         np.save(f"{out_dir}/W_product.npy", W_product)
         print("Done")
 
-        title = f"init {scaling}; L={n_layers}; N={N:04d}; drop {drop_l} wp {drop_p:.2f}"
+        title = f"init {scaling}; N={N:04d}; drop {drop_l} wp {drop_p:.2f}" # ; L={n_layers}
+
+        if theory and n_layers == 2 and activation == "linear":
+
+            print("THEORY")
+
+            # theory predictions
+            ln = LinearNetwork(
+                    [ weights_list[0][0], weights_list[1][0] ],
+                    w_star,
+                    q = 1 - drop_p,
+                    # the timestep in gradient flow is the learning rate
+                    # multiplied by the number of batches in an epoch
+                    eta=lr * n_train/train_kwargs['batch_size'],
+                    out_dir=join(out_dir, 'theory'))
+
+            try:
+                print("\t\tTrying to import existing simulations...", end=" ")
+                weights_list_th = load_weights( join(out_dir, 'theory') )
+                print("Done")
+            except FileNotFoundError as e:
+                print("Simulating anew...", end=" ")
+                _, weights_list_th = ln.simulate(n_epochs, saved_steps=saved_epochs)
+                print("Done")
+
+            print("\t\tCalculataing SVD of weights from simulations...")
+            Us_th = []
+            Ss_th = []
+            Vs_th = []
+            for l, W in enumerate(weights_list_th):
+                print(f"\t\tLayer {l+1}, {W.shape}", end=" ")
+                U, S, Vh = np.linalg.svd(W)
+                Us_th.append(U)
+                Ss_th.append(S)
+                Vs_th.append(Vh)
+                print("Done")
+
 
         print("PLOTTING ...")
 
@@ -276,7 +315,10 @@ if __name__ == "__main__":
         print("Done")
 
         print("\tsingular values...", end=" ")
-        plot_singular_values (Ss, epochs=saved_epochs, out_dir=out_dir, title=title)#, ext="svg", xlim=[0,100]) #, inset=[0,100]
+        if theory and n_layers == 2 and activation == "linear":
+            plot_singular_values (Ss, epochs=saved_epochs, theory=Ss_th, out_dir=out_dir, title=title)#, ext="svg", xlim=[0,100]) #, inset=[0,100]
+        else:
+            plot_singular_values (Ss, epochs=saved_epochs, out_dir=out_dir, title=title)#, ext="svg", xlim=[0,100]) #, inset=[0,100]
         print("Done")
 
         print("\ttrain and test loss/accuracy...", end=" ")
