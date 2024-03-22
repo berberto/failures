@@ -85,8 +85,8 @@ class Net(nn.Module):
     def save(self, filename):
         torch.save(self.state_dict(), filename)
 
-    def load(self, filename):
-        self.load_state_dict(torch.load(filename, map_location=self.device))
+    def load(self, filename, device):
+        self.load_state_dict(torch.load(filename, map_location=device))
 
     def grad_dict (self):
         return OrderedDict({name:pars.grad for name, pars in self.named_parameters()})
