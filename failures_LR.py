@@ -31,6 +31,7 @@ from theory import LinearNetwork
 if __name__ == "__main__":
 
     training = True
+    restart = True
     analysis = True
     plotting = True
     theory = True
@@ -132,21 +133,40 @@ if __name__ == "__main__":
                     layer_type=functools.partial(LinearWeightDropout, drop_p=drop_p),
                     activation=activation, output_activation='linear',
                     bias=False, scaling=scaling, drop_l=drop_l).to(device)
+        print(model)
 
         optimizer = optim.SGD(model.parameters(), lr=lr, weight_decay=wd)
 
-        model.save( join(out_dir, "model_init") )
-        print(model)
+        if restart:
+            # load the last model saved
+            model.load( join(out_dir, f"model_trained"), device )
+            # load info snapshots as they were previously saved
+            saved_epochs = list(np.load( join(out_dir, "saved_epochs.npy")))
+            train_loss = list( np.load( join(out_dir, "train_loss.npy")) )
+            test_acc = list( np.load( join(out_dir, "test_loss.npy")) )
+            covariance_train = list(np.load( join(out_dir, "covariance_train.npy") ))
+            covariance_test = list(np.load( join(out_dir, "covariance_test.npy") ))
+            hidden = [np.load( join(out_dir, f"hidden_{l+1}.npy")) for l in range(n_layers - 1)]
+            model_weights = [np.load( join(out_dir, f"weights_{l+1}.npy")) for l in range(n_layers)]
 
-        train_loss = []
-        test_acc = []
-        hidden = [np.array([]) for _ in range(n_layers - 1)]
-        model_weights = [np.array([]) for _ in range(n_layers)]
-        saved_epochs = []
-        covariance_train = []
-        covariance_test = []
+            start_epoch = saved_epochs[-1] + 1
 
-        for epoch in range(n_epochs + 1):
+        else:
+            # save the initial model
+            model.save( join(out_dir, "model_init") )
+            # initialise info snapshot as empty lists
+            saved_epochs = []
+            train_loss = []
+            test_acc = []
+            covariance_train = []
+            covariance_test = []
+            hidden = [np.array([]) for _ in range(n_layers - 1)]
+            model_weights = [np.array([]) for _ in range(n_layers)]
+            
+            start_epoch = 0
+
+
+        for epoch in range(start_epoch, n_epochs + 1):
 
             # collect statistics
             if epoch % n_skip == 0:
