@@ -23,7 +23,6 @@ class LinearNetwork (object):
 
 		self.d_input = self.Ws[0].shape[-1]
 		self.d_output = self.Ws[-1].shape[0]
-		print(f"Input dimension: {self.d_input}; Output dimension: {self.d_output}")
 		if cov is None:
 			cov = np.eye(self.d_input)
 		self.cov = cov
