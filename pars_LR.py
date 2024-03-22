@@ -33,7 +33,7 @@ with open("pars_LR.txt", "w") as file:
                         # file.write(_pars+"\n")
                         # if run:
                         #     print(80*"=")
-                        #     os.system("python failures_LR.py "+_pars)
+                        #     os.system("python -u failures_LR.py "+_pars)
                         for p in p_vals:
                             for f in f_vals:
                             # if dropout, chose option for layers
@@ -41,4 +41,4 @@ with open("pars_LR.txt", "w") as file:
                                 file.write(_pars+"\n")
                                 if run:
                                     print(80*"=")
-                                    os.system("python failures_LR.py "+_pars)
+                                    os.system("python -u failures_LR.py "+_pars)
