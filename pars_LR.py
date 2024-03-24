@@ -18,9 +18,11 @@ l_vals = [2] # [2,3,5,10] # number of layers
 
 d_vals = [4] # [1,2] # output dimension
 
-p_vals = [0.5] # weight failure probability
+p_vals = [0., 0.5] # weight failure probability
 
 f_vals = ["all","2"]
+
+wd_vals = [0., 1e-4, 1e-2]
 
 with open("pars_LR.txt", "w") as file:
     for s in s_vals:
@@ -35,8 +37,13 @@ with open("pars_LR.txt", "w") as file:
                         #     print(80*"=")
                         #     os.system("python -u failures_LR.py "+_pars)
                         for p in p_vals:
-                            for f in f_vals:
-                            # if dropout, chose option for layers
+                            if p == 0.:
+                                # if NOT dropout, choose weight-decay parameters
+                                _vals = wd_vals
+                            else:
+                                # if dropout, chose layers to apply it to
+                                _vals = f_vals
+                            for f in _vals:
                                 _pars = f"{s}  {a}  {N}  {l}  {d}  {p:.2f}  {f}"
                                 file.write(_pars+"\n")
                                 if run:
