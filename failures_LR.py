@@ -282,7 +282,7 @@ if __name__ == "__main__":
         np.save(f"{out_dir}/W_product.npy", W_product)
         print("Done")
 
-        title = f"init {scaling}; N={N:04d}; drop {drop_l} wp {drop_p:.2f}" # ; L={n_layers}
+        title = f"{activation}; 1/{scaling}; N={N:04d}; drop {drop_l} w/p {drop_p:.2f}" # ; L={n_layers}
 
         if theory and n_layers == 2 and activation == "linear":
 
