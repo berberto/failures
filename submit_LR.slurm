@@ -25,6 +25,6 @@ p=${parArray[5]} # weight failure probability
 f=${parArray[6]} # layers to apply failure
 
 python --version
-cmd="python failures_LR.py $s $a $N $l $d $p $f"
+cmd="python -u failures_LR.py $s $a $N $l $d $p $f"
 echo $cmd
 $cmd

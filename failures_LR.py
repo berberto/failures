@@ -298,14 +298,9 @@ if __name__ == "__main__":
                     eta=lr * n_train/train_kwargs['batch_size'],
                     out_dir=join(out_dir, 'theory'))
 
-            try:
-                print("\t\tTrying to import existing simulations...", end=" ")
-                weights_list_th = load_weights( join(out_dir, 'theory') )
-                print("Done")
-            except FileNotFoundError as e:
-                print("Simulating anew...", end=" ")
-                _, weights_list_th = ln.simulate(n_epochs, saved_steps=saved_epochs)
-                print("Done")
+            print("Simulating...", end=" ")
+            _, weights_list_th = ln.simulate(n_epochs, saved_steps=saved_epochs)
+            print("Done")
 
             print("\t\tCalculataing SVD of weights from simulations...")
             Us_th = []
