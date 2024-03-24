@@ -293,6 +293,7 @@ if __name__ == "__main__":
                     [ weights_list[0][0], weights_list[1][0] ],
                     w_star,
                     q = 1 - drop_p,
+                    wd = wd,
                     # the timestep in gradient flow is the learning rate
                     # multiplied by the number of batches in an epoch
                     eta=lr * n_train/train_kwargs['batch_size'],

@@ -6,7 +6,7 @@ from training_utils import append
 
 class LinearNetwork (object):
 
-	def __init__ (self, Ws, w_star, q=0.5, eta=0.001, cov=None, out_dir="."):
+	def __init__ (self, Ws, w_star, q=0.5, wd=0., eta=0.001, cov=None, out_dir="."):
 
 		self.out_dir = out_dir
 		os.makedirs(out_dir, exist_ok=True)
@@ -19,6 +19,7 @@ class LinearNetwork (object):
 
 		assert (q > 0) and (q <= 1), "Probability of synaptic connection out of bounds (0,1]."
 		self.q = q 		# probability of synaptic connection
+		self.wd = wd  	# weight decay
 		self.eta = eta 	# learning rate
 
 		self.d_input = self.Ws[0].shape[-1]
@@ -62,11 +63,13 @@ class LinearNetwork (object):
 		_reg_W = np.diagonal( np.dot(a.T, a) )
 		_reg_W = _reg_W[:,None] * np.dot( W, self._M )
 		_reg_W = (1 - self.q) * _reg_W
+		_reg_W = _reg_W + self.wd * W
 
 		# "regularisation" term for a
 		_reg_a = np.dot( W, self._M )
 		_reg_a = np.dot( _reg_a,  W.T )
 		_reg_a = (1 - self.q) * a * np.diagonal(_reg_a)[None,:]
+		_reg_a = _reg_a + self.wd * a
 
 		# weight update
 		self.Ws[0] = W + self.eta * ( _del_W - _reg_W )
